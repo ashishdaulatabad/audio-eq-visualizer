@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Audio Visualizer with Spikes</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+        #fileInput { position: absolute; top: 10px; left: 10px; }
+    </style>
+</head>
+<body>
+    <input type="file" id="fileInput" accept="audio/*">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let scene, camera, renderer, spikes;
+        let audioContext, analyser, dataArray;
+        const NUM_SPIKES = 512;
+
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            // Create a group to hold all spikes
+            spikes = new THREE.Group();
+            scene.add(spikes);
+
+            // Create spikes
+            for (let i = 0; i < NUM_SPIKES; i++) {
+                const geometry = new THREE.BoxGeometry(0.1, 0.1, 1);
+                const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+                const spike = new THREE.Mesh(geometry, material);
+                
+                // Position spikes in a sphere
+                const phi = Math.acos(-1 + (2 * i) / NUM_SPIKES);
+                const theta = Math.sqrt(NUM_SPIKES * Math.PI) * phi;
+                
+                spike.position.setFromSpherical(new THREE.Spherical(2, phi, theta));
+                spike.lookAt(new THREE.Vector3(0, 0, 0));
+                
+                spikes.add(spike);
+            }
+
+            camera.position.z = 5;
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 1024;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (analyser) {
+                analyser.getByteFrequencyData(dataArray);
+                
+                // Update spike lengths based on frequency data
+                for (let i = 0; i < NUM_SPIKES; i++) {
+                    const spike = spikes.children[i];
+                    const scale = 1 + dataArray[i] / 64; // Adjust divisor for more/less extreme effect
+                    spike.scale.z = scale;
+                }
+            }
+
+            spikes.rotation.y += 0.005; // Rotate the entire spike group
+
+            renderer.render(scene, camera);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                audioContext.decodeAudioData(e.target.result, function(buffer) {
+                    const source = audioContext.createBufferSource();
+                    source.buffer = buffer;
+                    source.connect(analyser);
+                    analyser.connect(audioContext.destination);
+                    source.start(0);
+                });
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        init();
+        animate();
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+    </script>
+</body>
+</html>

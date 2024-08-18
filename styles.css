@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url(./custom.css);
+@import url(./assets/icons/pen.svg);
+
+.w-avail {
+    width: -webkit-fill-available;
+    width: -moz-available;
+}
+
+.h-avail {
+    height: -webkit-fill-available;
+    height: -moz-available;
+}
+
+input.no-spinner::-webkit-inner-spin-button,
+input.no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.scrollbar-thumb::-webkit-scrollbar-thumb {
+    width: 8px;
+    border-radius: 3px;
+    background: rgb(200, 223, 245, 0.4);
+}
+
+.scrollbar-thumb::-webkit-scrollbar {
+    width: 8px;
+}
+
+.collapsed {
+    height: 0;
+    display: none;
+}
+
+.scrollbar-thumb::-webkit-scrollbar-track {
+    width: 8px;
+    border-radius: 3px;
+}
+
+.cursor-pencil {
+    cursor:
+        url(./assets/icons/pen.svg) -15 15,
+        default;
+}
+
+.cursor-select-area {
+    cursor:
+        url(./assets/icons/select-area.svg) 0 0,
+        default;
+}
+
+.icon-select-area::before {
+    content: url(./assets/icons/select-area.svg);
+}
+
+.label-height {
+    max-height: calc(100% - 15px);
+}
+
+.minimize::before {
+    font-size: 16px;
+    content: "\1F5D5";
+}
+
+.window::before {
+    font-size: 14px;
+    content: "\1F5D6";
+}
+
+.close::before {
+    font-size: 16px;
+    content: "\2715";
+}
+
+.seekbar {
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.panel-height {
+    max-height: calc(100% - 150px);
+}
+
+.seekbar:hover .seekbar-thumb {
+    min-height: 16px;
+}
