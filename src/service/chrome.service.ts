@@ -1,4 +1,4 @@
-import init, * as wasm from "wasm-eq";
+import init, * as wasm from "wasm-eq-visualizer";
 
 export type ChromeAbbr = {
     offCanvas: OffscreenCanvas,

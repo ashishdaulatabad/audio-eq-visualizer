@@ -113,7 +113,7 @@ export class WindowView {
         [this.canvas, this.canvasContext] = this.buildCanvas();
         this.fps = this.initializeFpsCounter();
         this.eqOptionDOM = this.buildOptions();
-        this.eqStyleDOM = this.buildEqOptions();
+        this.eqStyleDOM = this.buildEqVisualizerOptions();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
         this.slider = this.setSlider();
         this.sliderPar = this.setSliderContainer(this.slider);
@@ -395,32 +395,32 @@ export class WindowView {
 
     buildOptions() {
         const styleDom = WindowView.constructTitle('Visualizer Type');
-        const eqOptions = el('div')
+        const eqVisualizerOptions = el('div')
             .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'transition-all', 'duration-200', 'ease-in-out', 'w-avail', 'top-10', 'right-[300px]', 'rounded-[3px]', 'p-2', 'pr-0', 'text-center')
             .mcls('max-h-72', 'overflow-y-scroll', 'scrollbar-thumb', 'flex', 'flex-col', 'shadow-md')
             .inner([styleDom, this.constructOptions()])
             .get();
 
-        const list = eqOptions.children[1] as HTMLElement;
+        const list = eqVisualizerOptions.children[1] as HTMLElement;
         const button = styleDom.children[1] as HTMLElement;
         el(button).evt('click', (_) => el(list).tcls('collapsed'));
 
-        return eqOptions;
+        return eqVisualizerOptions;
     }
 
-    buildEqOptions() {
+    buildEqVisualizerOptions() {
         const styleDom = WindowView.constructTitle('Visualizer Style');
-        const eqOptions = el('div')
+        const eqVisualizerOptions = el('div')
             .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'transition-all', 'duration-200', 'ease-in-out', 'w-avail', 'top-10', 'right-[300px]', 'rounded-[3px]', 'p-2', 'pr-0', 'text-center')
             .mcls( 'max-h-72', 'overflow-y-scroll', 'scrollbar-thumb', 'flex', 'flex-col', 'shadow-md')
             .inner([styleDom, this.constructEqTypeOptions()])
             .get();
 
-        const list = eqOptions.children[1] as HTMLElement;
+        const list = eqVisualizerOptions.children[1] as HTMLElement;
         const button = styleDom.children[1] as HTMLElement;
         el(button).evt('click', (_) => el(list).tcls('collapsed'));
 
-        return eqOptions;
+        return eqVisualizerOptions;
     }
 
     resetCanvas(canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
