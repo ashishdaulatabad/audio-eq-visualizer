@@ -467,6 +467,9 @@ export class WindowView {
     }
 
     initializeAnalyzerWave() {
+        if (this.analyser) {
+            this.analyser.disconnect();
+        }
         this.fftSize = 16384;
         const analyser = this.audioService.useAudioContext().createAnalyser();
 
@@ -475,7 +478,7 @@ export class WindowView {
         this.buffer = new Uint8Array(analyser.frequencyBinCount);
 
         analyser.getByteTimeDomainData(this.buffer);
-        this.audioService.connectGainTo(analyser);
+        this.audioService.connectAudioWorkletNodeTo(analyser);
 
         return analyser;
     }
@@ -486,6 +489,10 @@ export class WindowView {
     }
 
     initializeAnalyzerBar() {
+        if (this.analyser) {
+            this.analyser.disconnect();
+        }
+
         this.fftSize = 4096;
         const analyser = this.audioService.useAudioContext().createAnalyser();
 
@@ -495,7 +502,7 @@ export class WindowView {
         this.frequencyIncr = this.setBufferSize();
 
         analyser.getFloatFrequencyData(this.frequencyBuffer);
-        this.audioService.connectGainTo(analyser);
+        this.audioService.connectAudioWorkletNodeTo(analyser);
 
         return analyser;
     }

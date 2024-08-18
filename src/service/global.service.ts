@@ -29,8 +29,9 @@ export class GlobalAudioService {
                 this.useAudioContext(),
                 'phase-vocoder-processor',
             );
-            this.audioWorkletNode.connect(this.audioContext.destination);
             this.mainGain.connect(this.audioWorkletNode);
+            this.audioWorkletNode.connect(this.audioContext.destination);
+            this.contextObservable$.fire();
         }).catch(err => {
             console.error(err);
         });
@@ -46,7 +47,6 @@ export class GlobalAudioService {
         if (!this.audioContext) {
             this.audioContext = new AudioContext();
             this.mainGain = this.audioContext.createGain();
-            this.contextObservable$.fire();
             this.createWorkletNode();
         }
 
@@ -98,6 +98,18 @@ export class GlobalAudioService {
         }
 
         this.mainGain.connect(destNode);
+        destNode.connect(this.audioContext.destination);
+    }
+
+    connectAudioWorkletNodeTo(destNode: AudioNode) {
+        if (!this.audioContext) {
+            this.useAudioContext();
+        }
+
+        if (this.audioWorkletNode) {
+            this.audioWorkletNode.connect(destNode);
+            destNode.connect(this.audioContext.destination);
+        }
     }
 
     createOscillatorNode(): OscillatorNode {
