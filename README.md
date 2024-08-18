@@ -1,5 +1,7 @@
 # midi
 
+Note: Before installing, check on how to build Rust code [here.](./wasm-eq/README.md)
+
 To install dependencies:
 
 ```bash
