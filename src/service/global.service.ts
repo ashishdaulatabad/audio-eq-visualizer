@@ -25,12 +25,21 @@ export class GlobalAudioService {
 
     createWorkletNode() {
         this.useAudioContext().audioWorklet.addModule('scripts/phase-vocoder.service.js').then(data => {
-            this.audioWorkletNode = new AudioWorkletNode(this.useAudioContext(), 'phase-vocoder-processor');
+            this.audioWorkletNode = new AudioWorkletNode(
+                this.useAudioContext(),
+                'phase-vocoder-processor',
+            );
             this.audioWorkletNode.connect(this.audioContext.destination);
             this.mainGain.connect(this.audioWorkletNode);
         }).catch(err => {
             console.error(err);
         });
+    }
+
+    changePitchFactor(value: number) {
+        // @ts-expect-error
+        const currentPitch = this.audioWorkletNode.parameters.get('pitchFactor');
+        currentPitch.value = value;
     }
 
     useAudioContext() {
@@ -46,7 +55,7 @@ export class GlobalAudioService {
 
     setAudioBuffer(file: File) {
         const fileReader = new FileReader();
-        
+
         fileReader.onloadend = (event) => {
             if (event.target) {
                 this.useAudioContext().decodeAudioData(event.target.result as ArrayBuffer)
@@ -90,7 +99,7 @@ export class GlobalAudioService {
 
         this.mainGain.connect(destNode);
     }
-    
+
     createOscillatorNode(): OscillatorNode {
         return this.useAudioContext().createOscillator();
     }

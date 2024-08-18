@@ -66,6 +66,8 @@ export class WindowView {
     // @ts-expect-error
     analyser: AnalyserNode;
     canvasContext: CanvasRenderingContext2D;
+    slider: HTMLInputElement;
+    sliderPar: HTMLElement;
     // @ts-expect-error
     webGLContext: WebGLRenderingContext;
     // Buffer Length
@@ -113,6 +115,8 @@ export class WindowView {
         this.eqOptionDOM = this.buildOptions();
         this.eqStyleDOM = this.buildEqOptions();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
+        this.slider = this.setSlider();
+        this.sliderPar = this.setSliderContainer(this.slider);
         this.seed = createRandomParticleSeeding(256, this.width, this.height, 1, 1, 2, 2);
 
         this.channelData = createBufferForChromaticAbberation(this.width, this.height);
@@ -162,7 +166,7 @@ export class WindowView {
     }
 
     getAllAttachableViews(): HTMLElement[] {
-        return [this.eqOptionDOM, this.eqStyleDOM];
+        return [this.eqOptionDOM, this.eqStyleDOM, this.sliderPar];
     }
 
     setSourceNode(
@@ -206,6 +210,33 @@ export class WindowView {
         } else {
             this.audioService.pause();
         }
+    }
+
+    setSliderContainer(...content: HTMLElement[]) {
+        return el('div')
+            .mcls('bg-gray-600/50', 'rounded-sm', 'pd-2', 'text-gray-200')
+            .inner([
+                el('div').innerHtml('1.0'),
+                ...content
+            ])
+            .get();
+    }
+
+    setSliderValue(evt: Event) {
+        const elem = evt.target as HTMLInputElement;
+        el(this.sliderPar.children[0] as HTMLElement).innerHtml(elem.value as string);
+        this.audioService.changePitchFactor(parseFloat(elem.value));
+    }
+
+    setSlider() {
+        return el('input')
+            .attr('type', 'range')
+            .attr('min', '0.6')
+            .attr('max', '1.4')
+            .attr('value', '1.0')
+            .attr('step', '0.001')
+            .evt('input', this.setSliderValue.bind(this))
+            .get<HTMLInputElement>();
     }
 
     setTitle(canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {

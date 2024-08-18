@@ -286,6 +286,7 @@ function generateWLookup(length) {
 
 const WEBAUDIO_BLOCK_SIZE = 128;
 
+/// Credits to: https://github.com/olvb/phaze
 class OLAProcessor extends AudioWorkletProcessor {
     constructor(options) {
         super(options);
@@ -374,9 +375,7 @@ class OLAProcessor extends AudioWorkletProcessor {
         }
     }
 
-    /** Read next web audio block to input buffers **/
     readAndSetInputs(inputBuffers, inputs) {
-        // when playback is paused, we may stop receiving new samples
         if (inputs[0].length && inputs[0][0].length == 0) {
             const totalInputs = this.nbInputs;
 
@@ -416,7 +415,7 @@ class OLAProcessor extends AudioWorkletProcessor {
         }
     }
 
-    static shiftBuffers(buffers) {
+    static shiftBuffers(buffers, isOutput) {
         const length = buffers.length;
 
         for (let i = 0; i < length; ++i) {
@@ -424,7 +423,11 @@ class OLAProcessor extends AudioWorkletProcessor {
 
             for (let j = 0; j < buffer.length; j++) {
                 buffer[j].copyWithin(0, WEBAUDIO_BLOCK_SIZE);
+                // if (isOutput) {
+                //     buffer[j].subarray(this.blockSize - WEBAUDIO_BLOCK_SIZE).fill(0);
+                // }
             }
+
         }
     }
 
@@ -466,7 +469,7 @@ class OLAProcessor extends AudioWorkletProcessor {
 
         this.handleOutputBuffersToRetrieve();
         this.writeOutputs(outputs);
-        OLAProcessor.shiftBuffers(this.outputBuffers);
+        OLAProcessor.shiftBuffers(this.outputBuffers, true);
 
         return true;
     }
@@ -503,53 +506,43 @@ class PhaseVocoderProcessor extends OLAProcessor {
     }
 
     processOLA(inputs, outputs, parameters) {
-        // no automation, take last value
-        const pitchFactor = 1.05;
+        const pitchFactor = parameters.pitchFactor[parameters.pitchFactor.length - 1];
 
-        if (pitchFactor !== 1.0) {
-            for (let i = 0; i < this.nbInputs; ++i) {
-                for (let j = 0; j < inputs[i].length; j++) {
-                    // big assumption here: output is symetric to input
-                    const input = inputs[i][j];
-                    const output = outputs[i][j];
+        for (let i = 0; i < this.nbInputs; ++i) {
+            for (let j = 0; j < inputs[i].length; j++) {
+                const input = inputs[i][j];
+                const output = outputs[i][j];
 
-                    PhaseVocoderProcessor.applyHannWindow(
-                        this.hannWindow,
-                        input,
-                    );
+                PhaseVocoderProcessor.applyHannWindow(
+                    this.hannWindow,
+                    input,
+                );
 
-                    fft(input, this.lookUp, this.freqComplexBuffer);
-                    this.computeMagnitudes();
+                fft(input, this.lookUp, this.freqComplexBuffer);
+                this.computeMagnitudes();
 
-                    this.nbPeaks = PhaseVocoderProcessor.findPeaks(
-                        this.magnitudes,
-                        this.peakIndexes,
-                    );
-                    this.shiftPeaks(
-                        this.freqComplexBuffer,
-                        this.freqComplexBufferShifted,
-                        this.peakIndexes,
-                        pitchFactor,
-                    );
-                    completeSpectrum(this.freqComplexBufferShifted);
+                this.nbPeaks = PhaseVocoderProcessor.findPeaks(
+                    this.magnitudes,
+                    this.peakIndexes,
+                );
+                this.shiftPeaks(
+                    this.freqComplexBuffer,
+                    this.freqComplexBufferShifted,
+                    this.peakIndexes,
+                    pitchFactor,
+                );
+                completeSpectrum(this.freqComplexBufferShifted);
 
-                    ifft(
-                        this.freqComplexBufferShifted,
-                        this.lookUp,
-                        this.timeComplexBuffer,
-                    );
-                    output.set(this.timeComplexBuffer);
-                    PhaseVocoderProcessor.applyHannWindow(
-                        this.hannWindow,
-                        output,
-                    );
-                }
-            }
-        } else {
-            for (let i = 0; i < this.nbInputs; ++i) {
-                for (let j = 0; j < inputs[i].length; j++) {
-                    outputs[i][j].set(inputs[i][j]);
-                }
+                ifft(
+                    this.freqComplexBufferShifted,
+                    this.lookUp,
+                    this.timeComplexBuffer,
+                );
+                output.set(this.timeComplexBuffer);
+                PhaseVocoderProcessor.applyHannWindow(
+                    this.hannWindow,
+                    output,
+                );
             }
         }
 
