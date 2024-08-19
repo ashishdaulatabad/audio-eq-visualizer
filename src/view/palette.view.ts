@@ -14,9 +14,7 @@ export class PaletteView {
         ['#262223', '#DDC6B6'],
         ['#02343F', '#F0EDCC'],
         ['#00203F', '#ADEFD1'],
-        ['#D1E9F6', '#524986'],
-        // ['#2BAE66', '#FCF6F5'],
-        // ['#EE4E34', '#FCEDDA']
+        ['#D1E9F6', '#524986']
     ];
 
     constructor(private subscriber: Subscriber) {

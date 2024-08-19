@@ -211,6 +211,7 @@ export function applyParticleTransformation(
         height: number,
         axScale: number,
         ayScale: number,
+        spinnerAngle?: number,
         positionalSeeds: {
             timeStamp: number,
             buffer: Array<[number, number, number, number, number, number]>
@@ -223,8 +224,19 @@ export function applyParticleTransformation(
     const timeChange = (currentTimeStamp - options.positionalSeeds.timeStamp) / 1000;
     for (let index = 0; index < options.positionalSeeds.buffer.length; ++index) {
         let [x, y, vx, vy, ax, ay] = options.positionalSeeds.buffer[index];
-        canvasContext.fillRect(x, y, 1, 1);
-        [ax, ay] = Complex.vec(options.axScale + options.ayScale, 2 * Math.random() * Math.PI).coord();
+
+        if (options.hasOwnProperty('spinnerAngle')) {
+            canvasContext.fillRect(x, y, 1, 1);
+        } else {
+            canvasContext.fillRect(x, y, 1, 1);
+        }
+        if (options.hasOwnProperty('spinnerAngle')) {
+            [ax, ay] = Complex.vec(options.axScale + options.ayScale, Math.random() * Math.PI)
+                    .mul(Complex.unit(options.spinnerAngle ?? 0))
+                    .coord();
+        } else {
+            [ax, ay] = Complex.vec(options.axScale + options.ayScale, 2 * Math.random() * Math.PI).coord();
+        }
 
         vx += ax * timeChange;
         vx = clamp(vx, -50, 50);

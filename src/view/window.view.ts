@@ -13,6 +13,7 @@ import {
 } from '../service/transformation.service';
 import { barFormation } from '../service/bar.service';
 import { ChromeAbbr, chromaticAbberationTransform, createBufferForChromaticAbberation, resizeBuffer } from '../service/chrome.service';
+import { createWebGl } from './webgl';
 
 export class WindowView {
     totalBars: number = 30;
@@ -111,13 +112,14 @@ export class WindowView {
     ) {
         [this.seekBarThumb, this.seekbarDOM] = this.constructSeekbar();
         [this.canvas, this.canvasContext] = this.buildCanvas();
+        this.resetCanvas(this.canvasContext);
         this.fps = this.initializeFpsCounter();
         this.eqOptionDOM = this.buildOptions();
         this.eqStyleDOM = this.buildEqVisualizerOptions();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
         this.slider = this.setSlider();
         this.sliderPar = this.setSliderContainer(this.slider);
-        this.seed = createRandomParticleSeeding(256, this.width, this.height, 1, 1, 2, 2);
+        this.seed = createRandomParticleSeeding(256, this.width, this.height, 10, 10, 10, 10);
 
         this.channelData = createBufferForChromaticAbberation(this.width, this.height);
         this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
@@ -156,6 +158,13 @@ export class WindowView {
                 this.resetCanvas(this.canvasContext);
             },
         );
+        this.changeMode(this.currentMode);
+    }
+
+    resetCanvasType(contextType: string) {
+        const [canvas, context] = this.buildCanvas(contextType);
+        this.mainDOM.replaceChild(canvas, this.canvas);
+        [this.canvas, this.canvasContext] = [canvas, context];
     }
 
     initializeFpsCounter() {
@@ -431,7 +440,17 @@ export class WindowView {
         return eqVisualizerOptions;
     }
 
+    resetOffscreenCanvas(offCanvas: OffscreenCanvas, canvasContext: OffscreenCanvasRenderingContext2D) {
+        offCanvas.width = document.documentElement.clientWidth;
+        offCanvas.height = document.documentElement.clientHeight;
+
+        this.resetCanvas(canvasContext);
+    }
+
     resetCanvas(canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
+        this.width = document.documentElement.clientWidth;
+        this.height = document.documentElement.clientHeight;
+
         if (this.isGradient) {
             const gradient = canvasContext.createLinearGradient(0, this.height / 2, this.width, this.height / 2);
             gradient.addColorStop(0, this.backColor);
@@ -458,7 +477,7 @@ export class WindowView {
         canvasContext.beginPath();
     }
 
-    buildCanvas(): [HTMLCanvasElement, CanvasRenderingContext2D] {
+    buildCanvas(contextType: string = '2d'): [HTMLCanvasElement, CanvasRenderingContext2D] {
         this.width = document.documentElement.clientWidth;
         this.height = document.documentElement.clientHeight;
 
@@ -468,9 +487,7 @@ export class WindowView {
             .attr('height', this.height.toString())
             .get<HTMLCanvasElement>();
 
-        const canvasContext = canvas.getContext('2d') as CanvasRenderingContext2D;
-
-        this.resetCanvas(canvasContext);
+        const canvasContext = canvas.getContext(contextType) as CanvasRenderingContext2D;
         return [canvas, canvasContext];
     }
 
@@ -610,8 +627,9 @@ export class WindowView {
                 return this.requestWaveCircleFormAnimation();
 
             case 'BarCircle':
-            default:
                 return this.requestBarWaveCircleFormAnimation();
+            default:
+                return 0;
         }
     }
 
@@ -689,7 +707,7 @@ export class WindowView {
     barCircleFormation() {
         this.analyser.getFloatFrequencyData(this.frequencyBuffer);
         this.resetCanvas(this.canvasContext);
-        this.resetCanvas(this.offContext);
+        this.resetOffscreenCanvas(this.offscreenCanvas, this.offContext);
         this.setTitle(this.offContext);
 
         barCircleFormation(this.offContext, {
@@ -782,8 +800,11 @@ export class WindowView {
                 break;
 
             case 'BarCircle':
-            default:
                 this.analyser = this.initializeAnalyzerBar();
+                break;
+
+            default:
+
                 break;
         }
 
