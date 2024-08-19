@@ -22,8 +22,8 @@ export class WindowView {
     backColor: string = 'rgb(10 12 14)';
     textColor: string = 'rgb(216 220 235)';
     seekPadding: number = 200;
-    barFactor = 2;
-    barCircleFactor = 1;
+    barFactor = 2.5;
+    barCircleFactor = 1.25;
     peakValue = 256;
     volumeScaling = 0.4;
     particleAccelScale = 10;
@@ -213,18 +213,26 @@ export class WindowView {
     }
 
     setSliderContainer(...content: HTMLElement[]) {
-        return el('div')
+        const title = WindowView.constructTitle('Pitch Factor');
+        const viewDom = el('div')
             .mcls('bg-gray-600/50', 'rounded-sm', 'pd-2', 'text-gray-200')
             .inner([
+                title,
                 el('div').innerHtml('1.0'),
-                ...content
+                el('div').inners(...content)
             ])
             .get();
+
+
+        const view = viewDom.children[2] as HTMLElement;
+        const button = title.children[1] as HTMLElement;
+        el(button).evt('click', (_) => el(view).tcls('collapsed'));
+        return viewDom;
     }
 
     setSliderValue(evt: Event) {
         const elem = evt.target as HTMLInputElement;
-        el(this.sliderPar.children[0] as HTMLElement).innerHtml(elem.value as string);
+        el(this.sliderPar.children[1] as HTMLElement).innerHtml(elem.value as string);
         this.audioService.changePitchFactor(parseFloat(elem.value));
     }
 

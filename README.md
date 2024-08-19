@@ -1,4 +1,4 @@
-# midi
+# Audio Eq Visualizer
 
 Note: Before installing, check on how to build Rust code [here.](./wasm-eq/README.md)
 
