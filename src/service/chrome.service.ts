@@ -10,9 +10,7 @@ export type ChromeAbbr = {
     b: ImageData,
 }
 
-if (init) {
-    init({ module_or_path: './wasm_eq_bg.wasm' });
-}
+init({ module_or_path: './wasm_eq_visualizer_bg.wasm' });
 
 export function resizeBuffer(
     data: ChromeAbbr,
@@ -75,7 +73,7 @@ export function chromaticAbberationTransform(
         channelData: ChromeAbbr
     }
 ) {
-    // const imageData = canvasContext.getImageData(0, 0, options.width, options.height);
+    const imageData = canvasContext.getImageData(0, 0, options.width, options.height);
     // wasm.apply_particle_transformation_for_canvas_2d(
     //     imageData,
     //     options.width,
@@ -91,23 +89,23 @@ export function chromaticAbberationTransform(
     //     options.channelData.outContext
     // );
 
-    // wasm.create_new_canvas_for_chrome_transformation(
-    //     imageData,
-    //     options.width,
-    //     options.height,
-    //     options.rxDrift,
-    //     options.ryDrift,
-    //     options.gxDrift,
-    //     options.gyDrift,
-    //     options.bxDrift,
-    //     options.byDrift,
-    //     options.channelData.context,
-    //     options.channelData.offCanvas,
-    //     options.channelData.outContext,
-    //     options.channelData.r,
-    //     options.channelData.g,
-    //     options.channelData.b
-    // );
+    wasm.create_new_canvas_for_chrome_transformation(
+        imageData,
+        options.width,
+        options.height,
+        options.rxDrift,
+        options.ryDrift,
+        options.gxDrift,
+        options.gyDrift,
+        options.bxDrift,
+        options.byDrift,
+        options.channelData.context,
+        options.channelData.offCanvas,
+        options.channelData.outContext,
+        options.channelData.r,
+        options.channelData.g,
+        options.channelData.b
+    );
 
     // const canvasImage = canvasContext.getImageData(0, 0, options.width, options.height);
     // const channelData = options.channelData;

@@ -5,14 +5,19 @@ import utility from '../common/utility';
 import { Complex } from '../common/complex';
 import {
     applyParticleTransformation,
-    barCircleFormation,
     complement,
     createRandomParticleSeeding,
     waveCircleFormation,
     waveFormation
 } from '../service/transformation.service';
 import { barFormation } from '../service/bar.service';
-import { ChromeAbbr, chromaticAbberationTransform, createBufferForChromaticAbberation, resizeBuffer } from '../service/chrome.service';
+import { barCircleFormation } from '../service/barcircle.service';
+import {
+    ChromeAbbr,
+    chromaticAbberationTransform,
+    createBufferForChromaticAbberation,
+    resizeBuffer
+} from '../service/chrome.service';
 import { createWebGl } from './webgl';
 
 export class WindowView {
@@ -56,6 +61,10 @@ export class WindowView {
     channelData: ChromeAbbr;
     optionsArray: any[] = [];
     currentEq: any = {};
+    canvasAction = {
+        draw: [],
+        effects: []
+    };
 
     mainDOM: HTMLDivElement;
     // @ts-expect-error
@@ -101,7 +110,7 @@ export class WindowView {
     seekbarLength: number = 0;
     audioContextTimer: number = 0;
     offsetTimer: number = 0;
-    lineType: string = 'Retro'; // Retro
+    lineType: string = 'Normal'; // Retro
     prevTime: number | null = null;
     youtubePlayer: any = null;
     isGradient: boolean = false;
@@ -113,13 +122,14 @@ export class WindowView {
         [this.seekBarThumb, this.seekbarDOM] = this.constructSeekbar();
         [this.canvas, this.canvasContext] = this.buildCanvas();
         this.resetCanvas(this.canvasContext);
+
         this.fps = this.initializeFpsCounter();
         this.eqOptionDOM = this.buildOptions();
         this.eqStyleDOM = this.buildEqVisualizerOptions();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
         this.slider = this.setSlider();
         this.sliderPar = this.setSliderContainer(this.slider);
-        this.seed = createRandomParticleSeeding(256, this.width, this.height, 10, 10, 10, 10);
+        this.seed = createRandomParticleSeeding(256, this.width, this.height, 30, 30, 20, 20);
 
         this.channelData = createBufferForChromaticAbberation(this.width, this.height);
         this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
@@ -804,7 +814,13 @@ export class WindowView {
                 break;
 
             default:
-
+                if (this.canvasContext) {
+                    this.resetCanvasType('webgl')
+                }
+                const glContext = createWebGl(this.canvas);
+                if (glContext) {
+                    this.webGLContext = glContext;
+                }
                 break;
         }
 
