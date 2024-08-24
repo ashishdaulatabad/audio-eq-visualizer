@@ -17,21 +17,22 @@ export class GlobalAudioService {
     audioWorkletNode: AudioWorkletNode;
 
     constructor(
-        private subscriber: Subscriber
+        private subscriber: Subscriber,
+        private wasmModule: ArrayBuffer
     ) {
         this.contextObservable$ = this.subscriber.createSubscription<void>('contextcreated');
         this.fileObservable$ = this.subscriber.createSubscription('musicchanged');
     }
 
     createWorkletNode() {
-        this.useAudioContext().audioWorklet.addModule('scripts/phase-vocoder.service.js').then(data => {
-            this.audioWorkletNode = new AudioWorkletNode(
-                this.useAudioContext(),
-                'phase-vocoder-processor',
-            );
+        this.useAudioContext().audioWorklet.addModule('scripts/phase-vocoder.service.js').then(_ => {
+            this.audioWorkletNode = new AudioWorkletNode(this.useAudioContext(), 'phase-vocoder-processor'); 
+            this.audioWorkletNode.port.postMessage({
+                data: this.wasmModule
+            });
+
             this.mainGain.connect(this.audioWorkletNode);
             this.audioWorkletNode.connect(this.audioContext.destination);
-            this.contextObservable$.fire();
         }).catch(err => {
             console.error(err);
         });
@@ -62,6 +63,7 @@ export class GlobalAudioService {
                     .then((buffer) => {
                         this.paused = false;
                         this.fileObservable$.fire({ title: file.name, buffer });
+                        this.contextObservable$.fire();
                     })
                     .catch((err) => console.log('Could not load mp3 file'));
             }
@@ -110,9 +112,5 @@ export class GlobalAudioService {
             this.audioWorkletNode.connect(destNode);
             destNode.connect(this.audioContext.destination);
         }
-    }
-
-    createOscillatorNode(): OscillatorNode {
-        return this.useAudioContext().createOscillator();
     }
 }

@@ -106,7 +106,6 @@ export class PaletteView {
             .inner(this.paletteArray.map(([f, s]) => [
                 this.constructPaletteDOM([f, s]),
                 this.constructPaletteDOM([s, f]),
-                // this.constructGradientPaletteDOM([f, s])
             ]).flat())
             .get();
 

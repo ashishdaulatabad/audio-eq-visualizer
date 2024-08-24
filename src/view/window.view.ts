@@ -2,66 +2,31 @@ import { el } from '../common/domhelper';
 import { GlobalAudioService } from '../service/global.service';
 import { Subscriber } from '../common/subscriber';
 import utility from '../common/utility';
-import { Complex } from '../common/complex';
 import {
-    applyParticleTransformation,
-    complement,
+    ParticleOptions,
+    applyTransformation,
     createRandomParticleSeeding,
-    waveCircleFormation,
-    waveFormation
 } from '../service/transformation.service';
-import { barFormation } from '../service/bar.service';
-import { barCircleFormation } from '../service/barcircle.service';
-import {
-    ChromeAbbr,
-    chromaticAbberationTransform,
-    createBufferForChromaticAbberation,
-    resizeBuffer
-} from '../service/chrome.service';
-import { createWebGl } from './webgl';
+import { createOptionsForBar } from '../service/bar.service';
+import { createBarCircleEq } from '../service/barcircle.service';
+import { createOptionsForWaveCircle } from '../service/wavecircle.service';
+import { createOptionsForWave } from '../service/wave.service';
+import { ChromeAbbr, createBufferForChromaticAbberation, resizeBuffer } from '../service/chrome.service';
 
 export class WindowView {
-    totalBars: number = 30;
-    barWidth: number = 20;
     fileName: string | null = null;
-    strokeWidth: number = 2;
     backColor: string = 'rgb(10 12 14)';
     textColor: string = 'rgb(216 220 235)';
     seekPadding: number = 200;
-    barFactor = 2.5;
-    barCircleFactor = 1.25;
-    peakValue = 256;
-    volumeScaling = 0.4;
-    particleAccelScale = 10;
-    radius = 150;
-    frequencyBandRanges: Array<[number, number]> = [
-        [20, 260],
-        [260, 500],
-        [500, 2000],
-        [2000, 5000],
-        [5000, 15000],
-    ];
-
     prevTimer = performance.now();
     width: number = document.documentElement.clientWidth;
     height: number = document.documentElement.clientWidth;
-    seed: {
-        timeStamp: number,
-        buffer: Array<[number, number, number, number, number, number]>
-    } = {
-        timeStamp: 0,
-        buffer: []
-    };
     timer: number = 0.0;
-    bandBarCount = 18;
-    circleBarCount = 24;
-    waveCounts = 25;
-    angleChange = 0.01;
     transformationsFns: any[] = [];
     channelData: ChromeAbbr;
     optionsArray: any[] = [];
     currentEq: any = {};
-    canvasAction = {
+    canvasAction: { draw: any[], effects: any[] } = {
         draw: [],
         effects: []
     };
@@ -90,30 +55,26 @@ export class WindowView {
     seekbarAnimationFrame: number | null = 0;
     /// Canvas Bar
     // @ts-expect-error
-    progressBar: HTMLImageElement;
     sourceBuffer: AudioBuffer;
+    // @ts-expect-error
     bufferSourceNode: AudioBufferSourceNode;
     // current mode
-    currentMode: string = 'Wave';
+    currentMode: string = 'None';
     // frequency increment
     frequencyIncr = 0;
     // Font
     fontSize = 30;
     eqOptionDOM: HTMLElement;
-    eqStyleDOM: HTMLElement;
+    button: HTMLElement;
     seekbarDOM: HTMLElement;
     seekBarThumb: HTMLElement;
     fps: HTMLElement;
-    embedDOM: HTMLIFrameElement | null = null;
-    mediaElement: MediaElementAudioSourceNode | null = null;
     totalTimer: number = 0;
     seekbarLength: number = 0;
     audioContextTimer: number = 0;
     offsetTimer: number = 0;
-    lineType: string = 'Normal'; // Retro
+    lineType: string = 'Normal';
     prevTime: number | null = null;
-    youtubePlayer: any = null;
-    isGradient: boolean = false;
 
     constructor(
         private audioService: GlobalAudioService,
@@ -125,50 +86,50 @@ export class WindowView {
 
         this.fps = this.initializeFpsCounter();
         this.eqOptionDOM = this.buildOptions();
-        this.eqStyleDOM = this.buildEqVisualizerOptions();
+        this.button = this.createButton();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
         this.slider = this.setSlider();
         this.sliderPar = this.setSliderContainer(this.slider);
-        this.seed = createRandomParticleSeeding(256, this.width, this.height, 30, 30, 20, 20);
+
+        this.canvasAction.draw.push({
+            drawKind: 'other',
+            fillColor: this.textColor,
+            width: this.width,
+            height: this.height,
+            ...createRandomParticleSeeding(256, this.width, this.height, 10, 10, 10, 10)
+        });
 
         this.channelData = createBufferForChromaticAbberation(this.width, this.height);
         this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
         this.offContext = this.offscreenCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
 
-        this.subscriber.subscribeToEvent('contextcreated', () => {
-            this.analyser = this.initializeAnalyzerWave();
 
-            if (!this.audioService.isPaused()) {
-                this.requestAnimation();
-            }
+        this.subscriber.subscribeToEvent('musicchanged', (data: { title: string; buffer: AudioBuffer }) => {
+            const fileSplit = data.title.split('.');
+            fileSplit.pop();
+            this.fileName = fileSplit.join('.');
+            [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(data.buffer);
+            this.timer = this.audioService.useAudioContext().currentTime;
+            this.run();
         });
 
-        [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(
-            new AudioBuffer({ length: 1, sampleRate: 48000 }),
-        );
-
-        this.subscriber.subscribeToEvent(
-            'musicchanged',
-            (data: { title: string; buffer: AudioBuffer }) => {
-                const fileSplit = data.title.split('.');
-                fileSplit.pop();
-                this.fileName = fileSplit.join('.');
-                [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(
-                    data.buffer,
-                );
-                this.timer = this.audioService.useAudioContext().currentTime;
-                this.run();
-            },
-        );
-
-        this.subscriber.subscribeToEvent(
-            'palette',
-            (data: [string, string, boolean]) => {
-                [this.backColor, this.textColor, this.isGradient] = data;
-                this.resetCanvas(this.canvasContext);
-            },
-        );
+        this.subscriber.subscribeToEvent('palette', (data: [string, string]) => {
+            [this.backColor, this.textColor] = data;
+            this.resetCanvas(this.canvasContext);
+        });
         this.changeMode(this.currentMode);
+    }
+
+    allowMediaControl(evt: Event) {
+        this.audioService.useAudioContext();
+    }
+
+    createButton() {
+        return el('button')
+            .mcls('bg-blue-400', 'text-gray-300', 'p-3')
+            .innerHtml('Allow Media Control')
+            .evt('click', this.allowMediaControl.bind(this))
+            .get();
     }
 
     resetCanvasType(contextType: string) {
@@ -185,7 +146,7 @@ export class WindowView {
     }
 
     getAllAttachableViews(): HTMLElement[] {
-        return [this.eqOptionDOM, this.eqStyleDOM, this.sliderPar];
+        return [this.eqOptionDOM, this.sliderPar, this.button];
     }
 
     setSourceNode(
@@ -219,8 +180,7 @@ export class WindowView {
 
     setDurationAndTimeDetails(sourceBuffer: AudioBuffer) {
         this.totalTimer = sourceBuffer.duration;
-        this.audioContextTimer =
-            this.audioService.useAudioContext().currentTime;
+        this.audioContextTimer = this.audioService.useAudioContext().currentTime;
     }
 
     onPlayerPausedOrResumed() {
@@ -241,7 +201,6 @@ export class WindowView {
                 el('div').inners(...content)
             ])
             .get();
-
 
         const view = viewDom.children[2] as HTMLElement;
         const button = title.children[1] as HTMLElement;
@@ -285,14 +244,9 @@ export class WindowView {
             canvasContext.fillStyle = this.textColor;
 
             const time =
-                this.audioService.useAudioContext().currentTime -
-                this.audioContextTimer +
-                this.offsetTimer;
-            canvasContext.fillText(
-                utility.timerSec(time),
-                30,
-                timerPos + this.fontSize + 10,
-            );
+                this.audioService.useAudioContext().currentTime - this.audioContextTimer + this.offsetTimer;
+
+            canvasContext.fillText(utility.timerSec(time), 30, timerPos + this.fontSize + 10);
             canvasContext.fillStyle = this.backColor;
         }
     }
@@ -390,29 +344,12 @@ export class WindowView {
         return el('div')
             .mcls('options', 'flex', 'flex-col')
             .inner(
-                ['Bar', 'BarCircle', 'WaveCircle', 'Wave'].map((type) =>
+                ['Bar', 'Bar Circle', 'Wave Circle', 'Wave'].map((type) =>
                     el('button')
                         .mcls('border-0', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'rounded-[3px]')
                         .mcls('text-gray-100', 'p-2')
                         .attr('data-type', type)
                         .evt('click', this.onOptionSelected.bind(this))
-                        .innerText(type)
-                        .get(),
-                ),
-            )
-            .get();
-    }
-
-    constructEqTypeOptions() {
-        return el('div')
-            .mcls('options', 'flex', 'flex-col')
-            .inner(
-                ['Retro', 'Normal'].map((type) =>
-                    el('button')
-                        .mcls('border-0', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'rounded-[3px]')
-                        .mcls('text-gray-100', 'p-2')
-                        .attr('data-type', type)
-                        .evt('click', this.onEqStyleSelected.bind(this))
                         .innerText(type)
                         .get(),
                 ),
@@ -435,21 +372,6 @@ export class WindowView {
         return eqVisualizerOptions;
     }
 
-    buildEqVisualizerOptions() {
-        const styleDom = WindowView.constructTitle('Visualizer Style');
-        const eqVisualizerOptions = el('div')
-            .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'transition-all', 'duration-200', 'ease-in-out', 'w-avail', 'top-10', 'right-[300px]', 'rounded-[3px]', 'p-2', 'pr-0', 'text-center')
-            .mcls( 'max-h-72', 'overflow-y-scroll', 'scrollbar-thumb', 'flex', 'flex-col', 'shadow-md')
-            .inner([styleDom, this.constructEqTypeOptions()])
-            .get();
-
-        const list = eqVisualizerOptions.children[1] as HTMLElement;
-        const button = styleDom.children[1] as HTMLElement;
-        el(button).evt('click', (_) => el(list).tcls('collapsed'));
-
-        return eqVisualizerOptions;
-    }
-
     resetOffscreenCanvas(offCanvas: OffscreenCanvas, canvasContext: OffscreenCanvasRenderingContext2D) {
         offCanvas.width = document.documentElement.clientWidth;
         offCanvas.height = document.documentElement.clientHeight;
@@ -461,29 +383,14 @@ export class WindowView {
         this.width = document.documentElement.clientWidth;
         this.height = document.documentElement.clientHeight;
 
-        if (this.isGradient) {
-            const gradient = canvasContext.createLinearGradient(0, this.height / 2, this.width, this.height / 2);
-            gradient.addColorStop(0, this.backColor);
-            gradient.addColorStop(1, this.textColor);
-            canvasContext.fillStyle = gradient;
-        } else {
-            canvasContext.fillStyle = this.backColor;
-        }
+        canvasContext.fillStyle = this.backColor;
         canvasContext.fillRect(0, 0, this.width, this.height);
-        canvasContext.lineWidth = this.strokeWidth;
 
         if (!(canvasContext instanceof OffscreenCanvasRenderingContext2D)) {
             this.setTitle(canvasContext);
         }
 
-        if (this.isGradient) {
-            const gradient = canvasContext.createLinearGradient(0, this.height / 2, this.width, this.height / 2);
-            gradient.addColorStop(1, this.backColor);
-            gradient.addColorStop(0, this.textColor);
-            canvasContext.strokeStyle = gradient;
-        } else {
-            canvasContext.strokeStyle = this.textColor;
-        }
+        canvasContext.strokeStyle = this.textColor;
         canvasContext.beginPath();
     }
 
@@ -544,8 +451,7 @@ export class WindowView {
 
     setFps() {
         const currentTimer = performance.now();
-        el(this.fps)
-            .innerHtml(`${Math.round(1000 / (currentTimer - this.prevTimer))} FPS`);
+        el(this.fps).innerHtml(`${Math.round(1000 / (currentTimer - this.prevTimer))} FPS`);
         this.prevTimer = currentTimer;
     }
 
@@ -557,6 +463,11 @@ export class WindowView {
         resizeBuffer(this.channelData, this.width, this.height);
         el(this.seekbarDOM).styleAttr({ width: this.width - 100 + 'px' });
 
+        this.canvasAction.draw.forEach(value => {
+            value.width = this.width;
+            value.height = this.height;
+        });
+
         el(this.canvas)
             .mcls('wave')
             .attr('width', this.width.toString())
@@ -564,42 +475,6 @@ export class WindowView {
             .get<HTMLCanvasElement>();
 
         this.resetCanvas(this.canvasContext);
-    }
-
-    requestBarWaveCircleFormAnimation() {
-        this.setFps();
-        this.barCircleFormation();
-        this.animationFrame = requestAnimationFrame(
-            this.requestBarWaveCircleFormAnimation.bind(this),
-        );
-        return this.animationFrame;
-    }
-
-    requestBarWaveFormAnimation() {
-        this.setFps();
-        this.barFormation();
-        this.animationFrame = requestAnimationFrame(
-            this.requestBarWaveFormAnimation.bind(this),
-        );
-        return this.animationFrame;
-    }
-
-    requestWaveFormAnimation() {
-        this.setFps();
-        this.waveFormation();
-        this.animationFrame = requestAnimationFrame(
-            this.requestWaveFormAnimation.bind(this),
-        );
-        return this.animationFrame;
-    }
-
-    requestWaveCircleFormAnimation() {
-        this.setFps();
-        this.waveCircleFormation();
-        this.animationFrame = requestAnimationFrame(
-            this.requestWaveCircleFormAnimation.bind(this),
-        );
-        return this.animationFrame;
     }
 
     moveSeekbar() {
@@ -618,211 +493,93 @@ export class WindowView {
 
     requestSeekbarAnimation() {
         this.seekbarAnimation();
-        this.seekbarAnimationFrame = requestAnimationFrame(
-            this.requestSeekbarAnimation.bind(this),
-        );
+        this.seekbarAnimationFrame = requestAnimationFrame(this.requestSeekbarAnimation.bind(this));
         return this.seekbarAnimationFrame;
     }
 
-    requestAnimation() {
-
-        switch (this.currentMode) {
-            case 'Bar':
-                return this.requestBarWaveFormAnimation();
-
-            case 'Wave':
-                return this.requestWaveFormAnimation();
-
-            case 'WaveCircle':
-                return this.requestWaveCircleFormAnimation();
-
-            case 'BarCircle':
-                return this.requestBarWaveCircleFormAnimation();
-            default:
-                return 0;
-        }
-    }
-
-    waveFormation() {
-        this.analyser.getByteTimeDomainData(this.buffer);
+    requestAnimation(): number {
+        this.setFps();
         this.resetCanvas(this.canvasContext);
         this.setTitle(this.canvasContext);
-
-        waveFormation(this.canvasContext, {
-            buffer: this.buffer,
-            height: this.height,
-            width: this.width
-        })
-
-        applyParticleTransformation(this.canvasContext, {
-            textColor: this.textColor,
-            backgroundColor: this.backColor,
-            width: this.width,
-            height: this.height,
-            axScale: this.particleAccelScale,
-            ayScale: this.particleAccelScale,
-            positionalSeeds: this.seed
-        });
-    }
-
-    barFormation() {
-        this.analyser.getFloatFrequencyData(this.frequencyBuffer);
-        this.resetCanvas(this.canvasContext);
-        this.setTitle(this.canvasContext);
-
-        barFormation(this.canvasContext, {
-            buffer: this.frequencyBuffer,
-            backgroundColor: this.backColor,
-            barFactor: this.barFactor,
-            width: this.width,
-            height: this.height,
-            bandBarCount: this.bandBarCount,
-            lineType: this.lineType,
-            frequencyIncr: this.frequencyIncr,
-            bandRanges: this.frequencyBandRanges,
-            textColor: this.textColor,
-            volumeScaling: this.volumeScaling
-        });
-
-        applyParticleTransformation(this.canvasContext, {
-            textColor: this.textColor,
-            backgroundColor: this.backColor,
-            width: this.width,
-            height: this.height,
-            axScale: this.particleAccelScale,
-            ayScale: this.particleAccelScale,
-            positionalSeeds: this.seed
-        });
-    }
-
-    setInitialAngle() {
-        if (!this.audioService.isPaused()) {
-            if (!this.prevTime) {
-                this.prevTime = performance.now();
-                this.angleChange = 0;
-            } else {
-                const timeChange = performance.now() - this.prevTime;
-                this.angleChange += (2 * Math.PI) / (timeChange * 2000);
-                this.prevTime = performance.now();
-            }
-
-            if (this.angleChange >= 2 * Math.PI) {
-                this.angleChange -= 2 * Math.PI;
-            }
-        }
-
-        return this.angleChange;
-    }
-
-    barCircleFormation() {
-        this.analyser.getFloatFrequencyData(this.frequencyBuffer);
-        this.resetCanvas(this.canvasContext);
-        this.resetOffscreenCanvas(this.offscreenCanvas, this.offContext);
-        this.setTitle(this.offContext);
-
-        barCircleFormation(this.offContext, {
-            angleInit: this.setInitialAngle(),
-            backgroundColor: this.backColor,
-            textColor: this.textColor,
-            lineType: this.lineType,
-            bandRanges: this.frequencyBandRanges,
-            buffer: this.frequencyBuffer,
-            barCircleFactor: this.barCircleFactor,
-            circleBarCount: this.circleBarCount,
-            frequencyIncr: this.frequencyIncr,
-            height: this.height,
-            radius: this.radius,
-            width: this.width,
-            volumeScaling: this.volumeScaling
-        });
-
-        applyParticleTransformation(this.offContext, {
-            textColor: this.textColor,
-            backgroundColor: this.backColor,
-            width: this.width,
-            height: this.height,
-            axScale: this.particleAccelScale,
-            ayScale: this.particleAccelScale,
-            positionalSeeds: this.seed
-        });
-
-        // chromaticAbberationTransform(this.offContext, {
-        //     height: this.height,
-        //     width: this.width,
-        //     rxDrift: 1,
-        //     ryDrift: 0,
-        //     gxDrift: -1,
-        //     gyDrift: 2,
-        //     bxDrift: 1,
-        //     byDrift: 2,
-        //     channelData: this.channelData,
-        // });
-
-        this.canvasContext.drawImage(this.offscreenCanvas, 0, 0);
-    }
-
-    waveCircleFormation() {
-        this.analyser.getFloatFrequencyData(this.frequencyBuffer);
-        this.resetCanvas(this.canvasContext);
-        this.setTitle(this.canvasContext);
-
-        waveCircleFormation(this.canvasContext, {
-            angleInit: this.setInitialAngle(),
-            backgroundColor: this.backColor,
-            textColor: this.textColor,
-            lineType: this.lineType,
-            bandRanges: this.frequencyBandRanges,
-            buffer: this.frequencyBuffer,
-            barCircleFactor: this.barCircleFactor,
-            waveCounts: this.waveCounts,
-            frequencyIncr: this.frequencyIncr,
-            height: this.height,
-            radius: this.radius,
-            width: this.width,
-            volumeScaling: this.volumeScaling
-        });
-
-        applyParticleTransformation(this.canvasContext, {
-            textColor: this.textColor,
-            backgroundColor: this.backColor,
-            width: this.width,
-            height: this.height,
-            axScale: this.particleAccelScale,
-            ayScale: this.particleAccelScale,
-            positionalSeeds: this.seed
-        });
+        applyTransformation(this.canvasContext, this.canvasAction.draw);
+        this.canvasContext.stroke();
+        this.animationFrame = requestAnimationFrame(this.requestAnimation.bind(this));
+        return this.animationFrame;
     }
 
     changeMode(mode: string) {
         this.currentMode = mode;
 
+        const addOrInsert = (canvasAction: any, value: any) => {
+            const index = canvasAction.draw.findIndex(({ drawKind }: any) => drawKind === 'eq');
+
+            if (index > -1) {
+                canvasAction.draw[index] = value;
+            } else {
+                canvasAction.draw.push(value);
+            }
+        }
+
         switch (this.currentMode) {
-            case 'Bar':
+            case 'Bar': {
                 this.analyser = this.initializeAnalyzerBar();
+                const value = {
+                    ...createOptionsForBar(this.frequencyIncr),
+                    drawKind: 'eq',
+                    analyser: this.analyser,
+                    buffer: this.frequencyBuffer,
+                    width: this.width,
+                    height: this.height,
+                }
+                addOrInsert(this.canvasAction, value);
                 break;
+            }
 
-            case 'Wave':
+            case 'Wave': {
                 this.analyser = this.initializeAnalyzerWave();
+                const value = {
+                    ...createOptionsForWave(),
+                    drawKind: 'eq',
+                    analyser: this.analyser,
+                    buffer: this.buffer,
+                    width: this.width,
+                    height: this.height,
+                }
+                addOrInsert(this.canvasAction, value);
                 break;
+            }
 
-            case 'WaveCircle':
+            case 'Wave Circle': {
                 this.analyser = this.initializeAnalyzerBar();
+                const value = {
+                    ...createOptionsForWaveCircle(this.frequencyIncr),
+                    drawKind: 'eq',
+                    analyser: this.analyser,
+                    buffer: this.frequencyBuffer,
+                    width: this.width,
+                    height: this.height,
+                }
+                addOrInsert(this.canvasAction, value);
                 break;
+            }
 
-            case 'BarCircle':
+            case 'Bar Circle': {
                 this.analyser = this.initializeAnalyzerBar();
+                const value = {
+                    ...createBarCircleEq(this.frequencyIncr),
+                    drawKind: 'eq',
+                    analyser: this.analyser,
+                    buffer: this.frequencyBuffer,
+                    width: this.width,
+                    height: this.height,
+                }
+                addOrInsert(this.canvasAction, value);
                 break;
+            }
 
             default:
-                if (this.canvasContext) {
-                    this.resetCanvasType('webgl')
-                }
-                const glContext = createWebGl(this.canvas);
-                if (glContext) {
-                    this.webGLContext = glContext;
-                }
                 break;
-        }
+        }   
 
         this.run();
     }
@@ -833,7 +590,11 @@ export class WindowView {
             cancelAnimationFrame(this.seekbarAnimationFrame as number);
         }
 
-        this.requestSeekbarAnimation();
-        return this.requestAnimation();
+        if (!this.audioService.isPaused()) {
+            this.requestSeekbarAnimation();
+            return this.requestAnimation();
+        }
+
+        return 0;
     }
 }

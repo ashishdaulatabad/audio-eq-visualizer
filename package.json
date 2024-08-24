@@ -11,9 +11,10 @@
         "start": "npm run",
         "tailwindcss": "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch",
         "dev": "bun build --watch --outdir=dist/ ./src/index.ts --entry-naming '[dir]/[name].[ext]'",
-        "watch_wasm": "npm-run-all --parallel build-ts tailwindcss cp-wasm",
-        "watch": "npm-run-all --parallel build-ts tailwindcss",
-        "cp-wasm": "cp ./wasm-eq-visualizer/pkg/wasm_eq_visualizer_bg.wasm ./dist",
+        "watch": "npm-run-all --parallel build-ts tailwindcss cp-wasm-eq cp-wasm-fft",
+        "watch_no_wasm": "npm-run-all --parallel build-ts tailwindcss",
+        "cp-wasm-eq": "cp ./wasm-eq-visualizer/pkg/wasm_eq_visualizer_bg.wasm ./dist",
+        "cp-wasm-fft": "cp ./wasm-fft/pkg/wasm_fft_bg.wasm ./dist",
         "build-ts": "./build.js"
     },
     "devDependencies": {
@@ -27,6 +28,7 @@
     },
     "dependencies": {
         "npm-run-all": "^4.1.5",
-        "wasm-eq-visualizer": "file:./wasm-eq-visualizer/pkg/"
+        "wasm-eq-visualizer": "file:./wasm-eq-visualizer/pkg/",
+        "wasm-fft": "file:./wasm-fft/pkg/"
     }
 }

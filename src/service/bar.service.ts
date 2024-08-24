@@ -6,6 +6,36 @@ const color = (magnitude: number) => {
     return 'rgb(255 75 99)';
 };
 
+export type BarOptions = {
+    type: 'Bar',
+    bandBarCount: number,
+    lineType: string,
+    bandRanges: Array<[number, number]>,
+    frequencyIncr: number,
+    volumeScaling: number,
+    barFactor: number,
+    fn: (c: CanvasRenderingContext2D, _: any) => void
+}
+
+export function createOptionsForBar(frequencyIncr: number): BarOptions {
+    return {
+        type: 'Bar',
+        bandBarCount: 16,
+        lineType: 'Normal',
+        bandRanges: [
+            [20, 260],
+            [260, 500],
+            [500, 2000],
+            [2000, 5000],
+            [5000, 15000],
+        ],
+        frequencyIncr,
+        volumeScaling: 0.4,
+        barFactor: 2.25,
+        fn: barFormation
+    }
+}
+
 function drawRetroForBar(
     context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     fromX: number,
@@ -53,25 +83,19 @@ function drawLineForBar(
 
 export function barFormation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    options: {
+    options: BarOptions & {
         buffer: Float32Array,
-        textColor: string,
-        backgroundColor: string,
+        analyser: AnalyserNode,
         width: number,
         height: number,
-        bandBarCount: number,
-        lineType: string,
-        bandRanges: Array<[number, number]>,
-        frequencyIncr: number,
-        volumeScaling: number,
-        barFactor: number,
     }
 ) {
+    options.analyser.getFloatFrequencyData(options.buffer);
     const buffer = options.buffer;
-    canvasContext.fillStyle
     const sliceWidth = options.width / (options.bandBarCount * 5);
     canvasContext.lineWidth = sliceWidth - sliceWidth / 10;
     const base = options.height;
+    canvasContext.lineCap = 'square';
 
     let x = 0 + (options.lineType === 'Retro' ? 0 : sliceWidth / 2),
         i = 0;

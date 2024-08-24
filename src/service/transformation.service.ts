@@ -3,10 +3,9 @@ import utility from "../common/utility";
 
 export function applyTransformation(
     canvasContext: CanvasRenderingContext2D,
-    renderingFns: Array<(_: CanvasRenderingContext2D, _1: any) => void>,
-    optionsArray: any[]
+    optionsArray: any[],
 ) {
-    renderingFns.forEach((callbackfn, index) => callbackfn(canvasContext, optionsArray[index]));
+    optionsArray.forEach((option) => option.fn(canvasContext, option));
 }
 
 export function complement(rgb: string) {
@@ -19,100 +18,18 @@ export function complement(rgb: string) {
     ].join('');
 }
 
-export function waveCircleFormation(
-    canvasContext: CanvasRenderingContext2D,
-    options: {
-        buffer: Float32Array,
-        angleInit: number,
-        backgroundColor: string,
-        textColor: string,
-        lineType: string,
-        radius: number,
-        width: number,
-        height: number,
-        bandRanges: Array<[number, number]>,
-        waveCounts: number,
-        frequencyIncr: number,
-        volumeScaling: number,
-        barCircleFactor: number
-    }
-) {
-    const [centerX, centerY] = [options.width / 2, options.height / 2];
-    const anglePerBar = (2 * Math.PI) / (options.bandRanges.length * options.waveCounts);
-    let theta = options.angleInit;
-
-    let angle = Complex.vec(options.radius, theta);
-    const change = Complex.unit(anglePerBar);
-    let unitAng = Complex.unit(theta);
-    canvasContext.lineWidth = 2;
-
-    let i = 0;
-    let firstPoint = null;
-    let prevPoints = [0, 0];
-
-    for (const [startRange, endRange] of options.bandRanges) {
-        const totalBands = (endRange - startRange) / options.frequencyIncr;
-        const indexIncrement = totalBands / options.waveCounts;
-        let perBandValue = 0;
-
-        for (; perBandValue < options.waveCounts; ++perBandValue, i += indexIncrement) {
-            const v = options.buffer[Math.ceil(i)] + 128.0;
-
-            const y =
-                utility.linearToPower(v, 4, 256, options.volumeScaling) *
-                options.barCircleFactor;
-            // Should be
-            const normal = unitAng.muln(y);
-            const [xc, yc] = angle.coord();
-            const [xb, yb] = normal.coord();
-
-            if (firstPoint === null) {
-                firstPoint = [xc + centerX + xb, yc + centerY + yb];
-                canvasContext.moveTo(xc + centerX + xb, yc + centerY + yb);
-            } else {
-                canvasContext.quadraticCurveTo(
-                    prevPoints[0],
-                    prevPoints[1],
-                    xc + centerX + xb,
-                    yc + centerY + yb,
-                );
-            }
-
-            prevPoints = [xc + centerX + xb, yc + centerY + yb];
-
-            angle = angle.mul(change);
-            unitAng = unitAng.mul(change);
-            theta += anglePerBar;
-        }
-    }
-
-    canvasContext.stroke();
-}
-
-export function waveFormation(
-    canvasContext: CanvasRenderingContext2D,
-    options: {
-        width: number,
-        height: number,
-        buffer: Uint8Array,
-    }
-) {
-    const base = options.height, base_2 = base / 2;
-    const buffer = options.buffer;
-    const sliceWidth = options.width / options.buffer.length;
-    let x = 0;
-    const v = buffer[0] / 128 - 1.0, y = base_2 + v * 256;
-    canvasContext.moveTo(0, y);
-
-    for (let i = 1; i < buffer.length; i++) {
-        const v = buffer[i] / 128 - 1.0;
-        const y = base_2 + v * 256;
-
-        canvasContext.lineTo(x, y);
-        x += sliceWidth;
-    }
-
-    canvasContext.stroke();
+export type ParticleOptions = {
+    timeStamp: number,
+    length: number,
+    fn: (c: CanvasRenderingContext2D, _: any) => void,
+    buffer: {
+        x: Float32Array,
+        y: Float32Array,
+        vx: Float32Array,
+        vy: Float32Array,
+        ax: Float32Array,
+        ay: Float32Array
+    };
 }
 
 export function createRandomParticleSeeding(
@@ -123,17 +40,19 @@ export function createRandomParticleSeeding(
     yVelScale: number,
     xAccelScale: number,
     yAccelScale: number,
-): { timeStamp: number, buffer: Array<[number, number, number, number, number, number]> } {
+): ParticleOptions {
     return {
         timeStamp: performance.now(),
-        buffer: Array.from({ length }, (_, index) => [
-            Math.random() * xScale,
-            Math.random() * yScale,
-            Math.random() * ((index & 3) > 1 ? -1 : 1) * xVelScale,
-            Math.random() * ((index & 3) <= 1 ? -1 : 1) * yVelScale,
-            Math.random() * ((index & 1) ? -1 : 1) * xAccelScale,
-            Math.random() * ((index & 1) ? 1 : -1) * yAccelScale,
-        ])
+        length,
+        fn: applyParticleTransformation,
+        buffer: {
+            x: new Float32Array(length).map(_ => (Math.random() * xScale)),
+            y: new Float32Array(length).map(_ => (Math.random() * yScale)),
+            vx: new Float32Array(length).map(_ =>(Math.random() * xVelScale)),
+            vy: new Float32Array(length).map(_ => (Math.random() * yVelScale)),
+            ax: new Float32Array(length).map(_ => (Math.random() * xAccelScale)),
+            ay: new Float32Array(length).map(_ => (Math.random() * yAccelScale)),
+        }
     };
 }
 
@@ -143,29 +62,27 @@ const clamp = (value: number, min: number, max: number) => (
 
 export function applyParticleTransformation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    options: {
-        textColor: string,
-        backgroundColor: string,
+    options: ParticleOptions & {
+        fillColor: string,
         width: number,
-        height: number,
-        axScale: number,
-        ayScale: number,
-        spinnerAngle?: number,
-        positionalSeeds: {
-            timeStamp: number,
-            buffer: Array<[number, number, number, number, number, number]>
-        },
+        height: number
     }
 ) {
-    canvasContext.fillStyle = options.textColor;
+    canvasContext.fillStyle = options.fillColor;
     const currentTimeStamp = performance.now();
 
-    const timeChange = (currentTimeStamp - options.positionalSeeds.timeStamp) / 1000;
-    for (let index = 0; index < options.positionalSeeds.buffer.length; ++index) {
-        let [x, y, vx, vy, ax, ay] = options.positionalSeeds.buffer[index];
-        canvasContext.fillRect(x, y, 1, 1);
-        [ax, ay] = Complex.vec(options.axScale + options.ayScale, Math.random() * Math.PI)
-            .coord();
+    const timeChange = (currentTimeStamp - options.timeStamp) / 1000;
+    for (let index = 0; index < options.length; ++index) {
+        let [x, y, vx, vy, ax, ay] = [
+            options.buffer.x[index],
+            options.buffer.y[index],
+            options.buffer.vx[index],
+            options.buffer.vy[index],
+            options.buffer.ax[index],
+            options.buffer.ay[index],
+        ];
+        canvasContext.fillRect(x, y, 1 + (vx > 0 ? 1 : 0), 1 + (vx > 0 ? 1 : 0));
+        [ax, ay] = Complex.vec(30, Math.random() * Math.PI).coord();
 
         vx += ax * timeChange;
         vx = clamp(vx, -50, 50);
@@ -187,9 +104,14 @@ export function applyParticleTransformation(
             y -= options.height;
         }
 
-        options.positionalSeeds.buffer[index] = [x, y, vx, vy, ax, ay];
+        options.buffer.x[index] = x;
+        options.buffer.y[index] = y;
+        options.buffer.vx[index] = vx;
+        options.buffer.vy[index] = vy;
+        options.buffer.ax[index] = ax;
+        options.buffer.ay[index] = ay;
     }
 
-    options.positionalSeeds.timeStamp = currentTimeStamp;
+    options.timeStamp = currentTimeStamp;
     canvasContext.stroke();
 }

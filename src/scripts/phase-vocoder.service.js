@@ -1,252 +1,6 @@
 "use strict";
 
-class FftIndexGenerator {
-    static trailingZeroesAndLen(value) {
-        if (value === 0) {
-            return [0, 0];
-        }
-
-        let count_trailing_zeroes = 0;
-        let count_digits = 0;
-
-        while ((value & 1) == 0) {
-            count_trailing_zeroes += 1;
-            value >>= 1;
-        }
-        while (value != 0) {
-            count_digits += 1;
-            value >>= 1;
-        }
-
-        return [count_trailing_zeroes, count_trailing_zeroes + count_digits];
-    }
-
-    constructor(len) {
-        this.len = 0;
-        this.base = 0;
-        this.head = 0;
-        this.head_lim = 0;
-        this.head_log = 0;
-        this.base_log = 0;
-        this.done = 0;
-        this.end = false;
-
-        const [trailing, digit_len] =
-            FftIndexGenerator.trailingZeroesAndLen(len);
-        this.len = len;
-        this.head_log = trailing;
-        this.head_lim =
-            1 << (digit_len - trailing - ((len & (len - 1)) === 0 ? 1 : 0));
-        this.base_log = trailing - 1;
-    }
-
-    [Symbol.iterator]() {
-        return this;
-    }
-
-    getBaseSize() {
-        return this.len >> this.head_log;
-    }
-
-    addHead() {
-        ++this.head;
-        this.head %= this.head_lim;
-    }
-
-    addBase() {
-        let start = 1 << this.base_log;
-
-        while (start > 0 && (start & this.base) > 1) {
-            this.base ^= start;
-            start >>= 1;
-        }
-
-        this.base |= start;
-    }
-
-    join() {
-        return (this.head << this.head_log) | this.base;
-    }
-
-    next() {
-        if (this.done < this.len) {
-            let value = this.join();
-            for (;;) {
-                this.end = value == this.len - 1;
-                this.addHead();
-
-                if (this.head == 0) {
-                    this.addBase();
-                }
-
-                if (value < this.len || this.done >= this.len) {
-                    break;
-                }
-                value = this.join();
-            }
-            this.done += 1;
-
-            return { value };
-        }
-        return { done: true, value: 0 };
-    }
-}
-
-function generateIndexForFFT(len) {
-    return new FftIndexGenerator(len);
-}
-
-function fft(array, lookup, dest) {
-    let length = array.length,
-        index = 0;
-    const result = dest;
-    result.fill(0.0);
-
-    for (const reverseIndex of generateIndexForFFT(length)) {
-        result[reverseIndex << 1] = array[index];
-        ++index;
-    }
-
-    /// FFT_2-Radix
-    for (let index = 0; index < length << 1; index += 4) {
-        const c1r = result[index];
-        const c1i = result[index + 1];
-        const c2r = result[index + 2];
-        const c2i = result[index + 3];
-
-        result[index] = c1r + c2r;
-        result[index + 1] = c1i + c2i;
-        result[index + 2] = c1r - c2r;
-        result[index + 3] = c1i - c2i;
-    }
-
-    if (length >= 2) {
-        for (
-            let blockSize = 4, lengthCheckLookup = length >> 2;
-            blockSize <= length;
-            blockSize <<= 1, lengthCheckLookup >>= 1
-        ) {
-            const lookupIncr = lengthCheckLookup << 1;
-            const blockJump = blockSize << 1;
-
-            for (
-                let startIndex = 0;
-                startIndex < length << 1;
-                startIndex += blockJump
-            ) {
-                let wr = 1,
-                    wi = 0;
-                let lookupIndex = 0;
-
-                for (
-                    let index = startIndex;
-                    index < startIndex + blockSize;
-                    index += 2
-                ) {
-                    const c1r = result[index];
-                    const c1i = result[index + 1];
-
-                    let c2r = result[index + blockSize];
-                    let c2i = result[index + blockSize + 1];
-                    const temp = c2r * wr - c2i * wi;
-                    c2i = c2r * wi + c2i * wr;
-                    c2r = temp;
-
-                    result[index] = c1r + c2r;
-                    result[index + 1] = c1i + c2i;
-
-                    result[index + blockSize] = c1r - c2r;
-                    result[index + blockSize + 1] = c1i - c2i;
-
-                    lookupIndex += lookupIncr;
-                    wr = lookup[lookupIndex];
-                    wi = -lookup[lookupIndex + 1];
-                }
-            }
-        }
-    }
-}
-
-function ifft(array, lookup, dest) {
-    let length = array.length >> 1;
-    const result = new Float32Array(length << 1);
-    let index = 0;
-
-    for (let reverseIndex of generateIndexForFFT(length)) {
-        result[reverseIndex << 1] = array[index << 1];
-        result[(reverseIndex << 1) + 1] = array[(index << 1) + 1];
-        ++index;
-    }
-    /// FFT_2-Radix
-    for (let index = 0; index < length << 1; index += 4) {
-        const c1r = result[index];
-        const c1i = result[index + 1];
-        const c2r = result[index + 2];
-        const c2i = result[index + 3];
-
-        const f1r = c1r + c2r;
-        const f1i = c1i + c2i;
-        const f2r = c1r - c2r;
-        const f2i = c1i - c2i;
-
-        result[index] = f1r;
-        result[index + 1] = f1i;
-        result[index + 2] = f2r;
-        result[index + 3] = f2i;
-    }
-
-    if (length >= 2) {
-        for (
-            let blockSize = 4, lengthCheckLookup = length >> 2;
-            blockSize <= length;
-            blockSize <<= 1, lengthCheckLookup >>= 1
-        ) {
-            const blockJump = blockSize << 1;
-            const lookupIncr = lengthCheckLookup << 1;
-
-            for (
-                let startIndex = 0;
-                startIndex < length << 1;
-                startIndex += blockJump
-            ) {
-                let wr = 1,
-                    wi = 0,
-                    lookupIndex = 0;
-
-                for (
-                    let index = startIndex;
-                    index < startIndex + blockSize;
-                    index += 2
-                ) {
-                    const c1r = result[index];
-                    const c1i = result[index + 1];
-
-                    let c2r = result[index + blockSize];
-                    let c2i = result[index + blockSize + 1];
-                    const temp = c2r * wr - c2i * wi;
-                    c2i = c2r * wi + c2i * wr;
-                    c2r = temp;
-
-                    result[index] = c1r + c2r;
-                    result[index + 1] = c1i + c2i;
-
-                    result[index + blockSize] = c1r - c2r;
-                    result[index + blockSize + 1] = c1i - c2i;
-
-                    lookupIndex += lookupIncr;
-                    wr = lookup[lookupIndex];
-                    wi = lookup[lookupIndex + 1];
-                }
-            }
-        }
-    }
-
-    const finalResult = dest;
-
-    for (let index = 0; index < length << 1; index += 2) {
-        finalResult[index >> 1] = result[index] / length;
-    }
-}
+import init, { fast_fft, fast_ifft } from "wasm-fft";
 
 function completeSpectrum(spectrum) {
     let size = spectrum.length;
@@ -423,11 +177,7 @@ class OLAProcessor extends AudioWorkletProcessor {
 
             for (let j = 0; j < buffer.length; j++) {
                 buffer[j].copyWithin(0, WEBAUDIO_BLOCK_SIZE);
-                // if (isOutput) {
-                //     buffer[j].subarray(this.blockSize - WEBAUDIO_BLOCK_SIZE).fill(0);
-                // }
             }
-
         }
     }
 
@@ -447,7 +197,7 @@ class OLAProcessor extends AudioWorkletProcessor {
             for (let j = 0; j < this.outputBuffers[i].length; ++j) {
                 for (let k = 0; k < this.blockSize; ++k) {
                     this.outputBuffers[i][j][k] +=
-                        (this.outputBuffersToRetrieve[i][j][k] * 1.5) /
+                        this.outputBuffersToRetrieve[i][j][k] /
                         this.nbOverlaps;
                 }
             }
@@ -477,12 +227,24 @@ class OLAProcessor extends AudioWorkletProcessor {
 
 class PhaseVocoderProcessor extends OLAProcessor {
     static get parameterDescriptors() {
-        return [
-            {
-                name: "pitchFactor",
-                defaultValue: 1.0,
-            },
-        ];
+        return [{
+            name: 'pitchFactor',
+            defaultValue: 1.0,
+        }];
+    }
+
+    async onmessage(data) {
+        const instance = async () => {
+            try {
+                WebAssembly.compile(data.data).then(async data => {
+                    const d = await init(data);
+                    console.log(d);
+                }); 
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        instance();
     }
 
     constructor(options) {
@@ -490,6 +252,10 @@ class PhaseVocoderProcessor extends OLAProcessor {
             blockSize: BUFFERED_BLOCK_SIZE,
         };
         super(options);
+        this.port.onmessage = async (event) => this.onmessage(event.data);
+        this.port.onmessageerror = (event) => {
+            console.log(event);
+        }
 
         this.fftSize = this.blockSize;
         this.timeCursor = 0;
@@ -513,12 +279,9 @@ class PhaseVocoderProcessor extends OLAProcessor {
                 const input = inputs[i][j];
                 const output = outputs[i][j];
 
-                PhaseVocoderProcessor.applyHannWindow(
-                    this.hannWindow,
-                    input,
-                );
+                PhaseVocoderProcessor.applyHannWindow(this.hannWindow, input);
 
-                fft(input, this.lookUp, this.freqComplexBuffer);
+                this.freqComplexBuffer = fast_fft(input, this.lookUp);
                 this.computeMagnitudes();
 
                 this.nbPeaks = PhaseVocoderProcessor.findPeaks(
@@ -533,11 +296,7 @@ class PhaseVocoderProcessor extends OLAProcessor {
                 );
                 completeSpectrum(this.freqComplexBufferShifted);
 
-                ifft(
-                    this.freqComplexBufferShifted,
-                    this.lookUp,
-                    this.timeComplexBuffer,
-                );
+                this.timeComplexBuffer = fast_ifft(this.freqComplexBufferShifted, this.lookUp);
                 output.set(this.timeComplexBuffer);
                 PhaseVocoderProcessor.applyHannWindow(
                     this.hannWindow,

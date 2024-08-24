@@ -1,14 +1,28 @@
 import { Complex } from "../common/complex";
 import utility from "../common/utility";
 
-export function createBarCircleEq() {
+export type BarCircleOptions = {
+    type: 'BarCircle',
+    circleBarCount: number,
+    lineType: string,
+    bandRanges: Array<[number, number]>,
+    frequencyIncr: number,
+    volumeScaling: number,
+    barCircleFactor: number,
+    radius: number,
+    fn: (c: CanvasRenderingContext2D, _: any) => void
+    angleInit: number,
+    timeStamp: number,
+    angularVelocity: number,
+}
+
+export function createBarCircleEq(frequencyIncr: number): BarCircleOptions {
     return {
-        buffer: new Float32Array(0),
+        type: 'BarCircle',
         angleInit: 0,
-        backgroundColor: '#121314',
-        textColor: '#d8dceb',
         lineType: 'Default',
-        radius: 100,
+        radius: 175,
+        circleBarCount: 20,
         bandRanges: [
             [20, 260],
             [260, 500],
@@ -16,30 +30,25 @@ export function createBarCircleEq() {
             [2000, 5000],
             [5000, 15000],
         ],
-        frequencyIncr: 0,
-        volumeScaling: 0,
-        barCircleFactor: 0,
+        fn: barCircleFormation,
+        frequencyIncr,
+        volumeScaling: 0.5,
+        barCircleFactor: 2.5,
+        timeStamp: performance.now(),
+        angularVelocity: 2 * Math.PI / 100,
     }
 }
 
 export function barCircleFormation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    options: {
+    options: BarCircleOptions & {
         buffer: Float32Array,
-        textColor: string,
-        backgroundColor: string,
+        analyser: AnalyserNode,
         width: number,
         height: number,
-        circleBarCount: number,
-        lineType: string,
-        bandRanges: Array<[number, number]>,
-        frequencyIncr: number,
-        volumeScaling: number,
-        barCircleFactor: number,
-        radius: number,
-        angleInit: number
     }
 ) {
+    options.analyser.getFloatFrequencyData(options.buffer);
     const buffer = options.buffer;
     const [centerX, centerY] = [options.width / 2, options.height / 2];
     const anglePerBar = (2 * Math.PI) / (options.bandRanges.length * options.circleBarCount);
@@ -54,6 +63,7 @@ export function barCircleFormation(
     canvasContext.lineWidth = arcLength - arcLength / 10;
     canvasContext.lineCap = 'round';
     let i = 0;
+    const currentTimestamp = performance.now();
 
     for (const [startRange, endRange] of options.bandRanges) {
         const totalBands = (endRange - startRange) / options.frequencyIncr;
@@ -79,6 +89,8 @@ export function barCircleFormation(
             theta += anglePerBar;
         }
     }
+    options.angleInit += ((currentTimestamp - options.timeStamp) / 1000) * options.angularVelocity;
+    options.timeStamp = currentTimestamp;
 
     canvasContext.stroke();
 }

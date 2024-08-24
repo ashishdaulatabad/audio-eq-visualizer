@@ -23,11 +23,14 @@ function theme() {
 
 window.onload = async () => {
     theme();
+    const wasmFile = await fetch('./wasm_fft_bg.wasm');
+    const wasmBin = await wasmFile.arrayBuffer();
+    console.log('wasmBin', wasmBin);
 
     var subscriber = new Subscriber();
     subscriber.createSubscription('onbodyload');
 
-    var globalAudioService = new GlobalAudioService(subscriber);
+    var globalAudioService = new GlobalAudioService(subscriber, wasmBin);
 
     let palette = new PaletteView(subscriber);
     let window2 = new WindowView(globalAudioService, subscriber);
