@@ -1,5 +1,5 @@
 use crate::index_generator::IndexGen;
-use wasm_bindgen::{prelude::*, Clamped};
+use wasm_bindgen::prelude::*;
 
 /// Perform Fast Fourier Transform
 /// on `n` values of Vec, and returns the floating values

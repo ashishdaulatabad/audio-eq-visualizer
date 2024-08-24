@@ -169,7 +169,7 @@ class OLAProcessor extends AudioWorkletProcessor {
         }
     }
 
-    static shiftBuffers(buffers, isOutput) {
+    static shiftBuffers(buffers) {
         const length = buffers.length;
 
         for (let i = 0; i < length; ++i) {
@@ -237,8 +237,7 @@ class PhaseVocoderProcessor extends OLAProcessor {
         const instance = async () => {
             try {
                 WebAssembly.compile(data.data).then(async data => {
-                    const d = await init(data);
-                    console.log(d);
+                    const d = await init({ module_or_path: data });
                 }); 
             } catch (e) {
                 console.error(e);
@@ -263,7 +262,6 @@ class PhaseVocoderProcessor extends OLAProcessor {
         this.lookUp = generateWLookup(this.fftSize);
         this.hannWindow = genHannWindow(this.blockSize);
 
-        this.freqComplexBuffer = new Float32Array(this.fftSize << 1);
         this.freqComplexBufferShifted = new Float32Array(this.fftSize << 1);
         this.timeComplexBuffer = new Float32Array(this.fftSize);
         this.magnitudes = new Float32Array(this.fftSize / 2 + 1);
@@ -281,15 +279,15 @@ class PhaseVocoderProcessor extends OLAProcessor {
 
                 PhaseVocoderProcessor.applyHannWindow(this.hannWindow, input);
 
-                this.freqComplexBuffer = fast_fft(input, this.lookUp);
-                this.computeMagnitudes();
+                const freqComplexBuffer = fast_fft(input, this.lookUp);
+                this.computeMagnitudes(freqComplexBuffer);
 
                 this.nbPeaks = PhaseVocoderProcessor.findPeaks(
                     this.magnitudes,
                     this.peakIndexes,
                 );
                 this.shiftPeaks(
-                    this.freqComplexBuffer,
+                    freqComplexBuffer,
                     this.freqComplexBufferShifted,
                     this.peakIndexes,
                     pitchFactor,
@@ -316,10 +314,10 @@ class PhaseVocoderProcessor extends OLAProcessor {
     }
 
     /** Compute squared magnitudes for peak finding **/
-    computeMagnitudes() {
+    computeMagnitudes(complexBuffer) {
         const magnitudeRef = this.magnitudes,
             length = this.magnitudes.length,
-            cBuffer = this.freqComplexBuffer;
+            cBuffer = complexBuffer;
 
         for (let i = 0, j = 0; i < length; ++i, j += 2) {
             const real = cBuffer[j];

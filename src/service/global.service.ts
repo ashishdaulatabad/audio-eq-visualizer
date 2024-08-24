@@ -69,7 +69,9 @@ export class GlobalAudioService {
             }
         }
 
-        fileReader.readAsArrayBuffer(file);
+        if (file instanceof File) {
+            fileReader.readAsArrayBuffer(file);
+        }
     }
 
     makeConnection(sourceNode: AudioNode) {

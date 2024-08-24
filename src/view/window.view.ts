@@ -126,7 +126,7 @@ export class WindowView {
 
     createButton() {
         return el('button')
-            .mcls('bg-blue-400', 'text-gray-300', 'p-3')
+            .mcls('bg-blue-600', 'text-gray-300', 'p-2', 'pd-1', 'hover:bg-blue-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm')
             .innerHtml('Allow Media Control')
             .evt('click', this.allowMediaControl.bind(this))
             .get();

@@ -29,7 +29,7 @@ export function waveFormation(
 
     for (let i = 1; i < buffer.length; i++) {
         const v = buffer[i] / 128 - 1.0;
-        const y = base_2 + v * 256;
+        const y = base_2 + v * 512;
 
         canvasContext.lineTo(x, y);
         x += sliceWidth;

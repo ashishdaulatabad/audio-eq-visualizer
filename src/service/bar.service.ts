@@ -31,7 +31,7 @@ export function createOptionsForBar(frequencyIncr: number): BarOptions {
         ],
         frequencyIncr,
         volumeScaling: 0.4,
-        barFactor: 2.25,
+        barFactor: 2.5,
         fn: barFormation
     }
 }
@@ -43,6 +43,7 @@ function drawRetroForBar(
     width: number,
     toY: number,
 ) {
+    context.lineWidth = 2;
     const magnitude = Math.abs(toY - fromY);
     const block = 25,
         padding = 8;
