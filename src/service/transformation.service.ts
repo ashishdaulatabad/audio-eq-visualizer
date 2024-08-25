@@ -81,13 +81,13 @@ export function applyParticleTransformation(
             options.buffer.ax[index],
             options.buffer.ay[index],
         ];
-        canvasContext.fillRect(x, y, 1 + (vx > 0 ? 1 : 0), 1 + (vx > 0 ? 1 : 0));
-        [ax, ay] = Complex.vec(30, Math.random() * Math.PI).coord();
+        canvasContext.fillRect(x, y, 1, 1);
+        [ax, ay] = Complex.vec(8, 2 * Math.random() * Math.PI).coord();
 
         vx += ax * timeChange;
-        vx = clamp(vx, -50, 50);
+        vx = clamp(vx, -20, 20);
         vy += ay * timeChange;
-        vy = clamp(vy, -50, 50);
+        vy = clamp(vy, -20, 20);
 
         x += vx * timeChange;
         y += vy * timeChange;

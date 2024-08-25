@@ -12,7 +12,7 @@ export class PanelView {
 
     constructPanelView() {
         return el('div')
-            .mcls('fixed', 'bg-gray-600/30', 'backdrop-blur-[2px]', 'min-w-36', 'min-h-24', 'top-10', 'right-10', 'rounded-[30px]', 'p-2', 'pr-0', 'text-center')
+            .mcls('fixed', 'bg-gray-600/30', 'backdrop-blur-[2px]', 'min-w-36', 'min-h-24', 'top-10', 'right-10', 'rounded-[1rem]', 'pr-0', 'text-center')
             .mcls('overflow-y-scroll', 'shadow-md', 'panel-height', 'scrollbar-thumb')
             .get();
     }

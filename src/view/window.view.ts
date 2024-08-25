@@ -96,7 +96,7 @@ export class WindowView {
             fillColor: this.textColor,
             width: this.width,
             height: this.height,
-            ...createRandomParticleSeeding(256, this.width, this.height, 10, 10, 10, 10)
+            ...createRandomParticleSeeding(256, this.width, this.height, 6, 6, 2, 2)
         });
 
         this.channelData = createBufferForChromaticAbberation(this.width, this.height);
@@ -323,8 +323,8 @@ export class WindowView {
             .get();
 
         const seekbarDOM = el('div')
-            .mcls('seekbar', 'absolute', 'min-h-12', 'rounded-[24px]', 'bg-gray-700/70', 'flex', 'align-center')
-            .mcls('backdrop-blur-[2px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg')
+            .mcls('seekbar', 'absolute', 'min-h-12', 'rounded-[24px]', 'bg-gray-700/40', 'flex', 'align-center')
+            .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg')
             .styleAttr({
                 width: this.seekbarLength + 'px',
                 bottom: '50px',
