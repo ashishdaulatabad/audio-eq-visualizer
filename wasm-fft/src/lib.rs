@@ -1,5 +1,6 @@
 mod fft;
 mod index_generator;
+mod phase_vocoder_utils;
 mod utils;
 
 use wasm_bindgen::{prelude::*, Clamped};
@@ -20,4 +21,3 @@ extern "C" {
     fn logc(c: Clamped<Vec<u8>>);
     fn alert(s: &str);
 }
-

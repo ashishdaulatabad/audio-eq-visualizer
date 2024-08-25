@@ -34,7 +34,10 @@ impl IndexGen {
     pub const fn new(len: usize) -> Self {
         let (trailing, digit_len) = Self::trailing_zeroes_and_len(len);
         let head_log = trailing;
-        let head_lim = 1 << (digit_len - trailing - if len.is_power_of_two() { 1 } else { 0 });
+        let head_lim = 1
+            << (digit_len
+                - trailing
+                - if len.is_power_of_two() { 1 } else { 0 });
 
         Self {
             len,
@@ -46,11 +49,6 @@ impl IndexGen {
             base_log: (trailing - 1) as u8,
             end: false,
         }
-    }
-
-    #[inline]
-    pub const fn get_base_size(&self) -> usize {
-        self.len >> self.head_log
     }
 
     #[inline]

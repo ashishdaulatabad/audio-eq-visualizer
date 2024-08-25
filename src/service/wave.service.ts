@@ -19,12 +19,14 @@ export function waveFormation(
         buffer: Uint8Array,
     }
 ) {
+    canvasContext.lineWidth = 2;
     options.analyser.getByteTimeDomainData(options.buffer);
     const base = options.height, base_2 = base / 2;
     const buffer = options.buffer;
     const sliceWidth = options.width / options.buffer.length;
     let x = 0;
     const v = buffer[0] / 128 - 1.0, y = base_2 + v * 256;
+    canvasContext.beginPath();
     canvasContext.moveTo(0, y);
 
     for (let i = 1; i < buffer.length; i++) {

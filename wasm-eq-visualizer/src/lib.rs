@@ -1,5 +1,3 @@
-mod fft;
-mod index_generator;
 mod utils;
 
 use wasm_bindgen::{prelude::*, Clamped};

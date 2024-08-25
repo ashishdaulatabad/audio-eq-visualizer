@@ -43,7 +43,6 @@ function drawRetroForBar(
     width: number,
     toY: number,
 ) {
-    context.lineWidth = 2;
     const magnitude = Math.abs(toY - fromY);
     const block = 25,
         padding = 8;
@@ -98,6 +97,7 @@ export function barFormation(
     const base = options.height;
     canvasContext.lineCap = 'square';
 
+    canvasContext.beginPath();
     let x = 0 + (options.lineType === 'Retro' ? 0 : sliceWidth / 2),
         i = 0;
 

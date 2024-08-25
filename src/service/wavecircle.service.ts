@@ -62,6 +62,7 @@ export function waveCircleFormation(
     let firstPoint = null;
     let prevPoints = [0, 0];
     const currentTimestamp = performance.now();
+    canvasContext.beginPath();
 
     for (const [startRange, endRange] of options.bandRanges) {
         const totalBands = (endRange - startRange) / options.frequencyIncr;

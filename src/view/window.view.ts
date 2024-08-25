@@ -59,7 +59,7 @@ export class WindowView {
     // @ts-expect-error
     bufferSourceNode: AudioBufferSourceNode;
     // current mode
-    currentMode: string = 'None';
+    currentMode: string = 'Wave';
     // frequency increment
     frequencyIncr = 0;
     // Font
@@ -86,7 +86,7 @@ export class WindowView {
 
         this.fps = this.initializeFpsCounter();
         this.eqOptionDOM = this.buildOptions();
-        this.button = this.createButton();
+        this.button = this.createAudioPermissionButton();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
         this.slider = this.setSlider();
         this.sliderPar = this.setSliderContainer(this.slider);
@@ -103,7 +103,6 @@ export class WindowView {
         this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
         this.offContext = this.offscreenCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
 
-
         this.subscriber.subscribeToEvent('musicchanged', (data: { title: string; buffer: AudioBuffer }) => {
             const fileSplit = data.title.split('.');
             fileSplit.pop();
@@ -117,18 +116,42 @@ export class WindowView {
             [this.backColor, this.textColor] = data;
             this.resetCanvas(this.canvasContext);
         });
-        this.changeMode(this.currentMode);
     }
 
-    allowMediaControl(evt: Event) {
-        this.audioService.useAudioContext();
+    allowMediaControl(_: Event) {
+        if (!this.audioService.isInitialized()) {
+            this.audioService.useAudioContext();
+            this.changeMode(this.currentMode);
+        }
     }
 
-    createButton() {
+    createAudioPermissionButton() {
         return el('button')
-            .mcls('bg-blue-600', 'text-gray-300', 'p-2', 'pd-1', 'hover:bg-blue-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm')
+            .mcls('bg-blue-600', 'block', 'w-avail', 'text-gray-300', 'p-2', 'pb-1', 'hover:bg-blue-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-500')
             .innerHtml('Allow Media Control')
             .evt('click', this.allowMediaControl.bind(this))
+            .get();
+    }
+
+    selectMediaFile() {
+        const input = el('input')
+            .attr('type', 'file')
+            .attr('accept', 'audio/*')
+            .get();
+
+        input.onchange = (event: any) => {
+            this.audioService.setAudioBuffer(event.target.files[0]);
+        }
+        input.click();
+
+        return input;
+    }
+    
+    createFileSelectionButton() {
+        return el('button')
+            .mcls('bg-blue-600', 'block', 'w-avail', 'text-gray-300', 'p-2', 'pb-1', 'hover:bg-blue-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-500')
+            .innerHtml('Select Audio File')
+            .evt('click', this.selectMediaFile.bind(this))
             .get();
     }
 
@@ -146,7 +169,7 @@ export class WindowView {
     }
 
     getAllAttachableViews(): HTMLElement[] {
-        return [this.eqOptionDOM, this.sliderPar, this.button];
+        return [this.eqOptionDOM, this.sliderPar, this.button, this.createFileSelectionButton()];
     }
 
     setSourceNode(
@@ -194,7 +217,7 @@ export class WindowView {
     setSliderContainer(...content: HTMLElement[]) {
         const title = WindowView.constructTitle('Pitch Factor');
         const viewDom = el('div')
-            .mcls('bg-gray-600/50', 'rounded-sm', 'pd-2', 'text-gray-200')
+            .mcls('bg-gray-600/50', 'rounded-sm', 'p-2', 'text-gray-200')
             .inner([
                 title,
                 el('div').innerHtml('1.0'),
@@ -391,7 +414,6 @@ export class WindowView {
         }
 
         canvasContext.strokeStyle = this.textColor;
-        canvasContext.beginPath();
     }
 
     buildCanvas(contextType: string = '2d'): [HTMLCanvasElement, CanvasRenderingContext2D] {

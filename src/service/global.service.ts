@@ -13,6 +13,7 @@ export class GlobalAudioService {
     contextObservable$: Observable<void>;
     fileObservable$: Observable<{ title: string, buffer: AudioBuffer }>;
     paused = true;
+    initialized = false;
     // @ts-expect-error
     audioWorkletNode: AudioWorkletNode;
 
@@ -30,6 +31,13 @@ export class GlobalAudioService {
             this.audioWorkletNode.port.postMessage({
                 data: this.wasmModule
             });
+
+            this.audioWorkletNode.port.onmessage = (event) => {
+                if (event.data.wasm_init) {
+                    this.initialized = true;
+                    this.contextObservable$.fire();
+                }
+            }
 
             this.mainGain.connect(this.audioWorkletNode);
             this.audioWorkletNode.connect(this.audioContext.destination);
@@ -63,7 +71,6 @@ export class GlobalAudioService {
                     .then((buffer) => {
                         this.paused = false;
                         this.fileObservable$.fire({ title: file.name, buffer });
-                        this.contextObservable$.fire();
                     })
                     .catch((err) => console.log('Could not load mp3 file'));
             }
@@ -80,6 +87,10 @@ export class GlobalAudioService {
         }
 
         sourceNode.connect(this.mainGain);
+    }
+
+    isInitialized() {
+        return this.initialized;
     }
 
     isPaused() {

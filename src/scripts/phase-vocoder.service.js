@@ -1,6 +1,6 @@
 "use strict";
 
-import init, { fast_fft, fast_ifft } from "wasm-fft";
+import init, { fast_fft, fast_ifft, shift_peaks } from "wasm-fft";
 
 function completeSpectrum(spectrum) {
     let size = spectrum.length;
@@ -140,7 +140,7 @@ class OLAProcessor extends AudioWorkletProcessor {
                     inputBuffer[j].fill(0, this.blockSize);
                 }
             }
-            return;
+            return false;
         }
 
         const totalInputs = this.nbInputs;
@@ -154,6 +154,8 @@ class OLAProcessor extends AudioWorkletProcessor {
                 inputBuffer[j].set(webAudioBlock, this.blockSize);
             }
         }
+
+        return true;
     }
 
     /** Write next web audio block from output buffers **/
@@ -206,21 +208,21 @@ class OLAProcessor extends AudioWorkletProcessor {
 
     process(inputs, outputs, params) {
         this.reallocateChannelsIfNeeded(inputs, outputs);
-        this.readAndSetInputs(this.inputBuffers, inputs);
+        if (this.readAndSetInputs(this.inputBuffers, inputs)) {
 
-        OLAProcessor.shiftBuffers(this.inputBuffers);
-        this.prepareInputBuffersToSend();
+            OLAProcessor.shiftBuffers(this.inputBuffers);
+            this.prepareInputBuffersToSend();
 
-        this.processOLA(
-            this.inputBuffersToSend,
-            this.outputBuffersToRetrieve,
-            params,
-        );
+            this.processOLA(
+                this.inputBuffersToSend,
+                this.outputBuffersToRetrieve,
+                params,
+            );
 
-        this.handleOutputBuffersToRetrieve();
-        this.writeOutputs(outputs);
-        OLAProcessor.shiftBuffers(this.outputBuffers, true);
-
+            this.handleOutputBuffersToRetrieve();
+            this.writeOutputs(outputs);
+            OLAProcessor.shiftBuffers(this.outputBuffers, true);
+        }
         return true;
     }
 }
@@ -237,7 +239,9 @@ class PhaseVocoderProcessor extends OLAProcessor {
         const instance = async () => {
             try {
                 WebAssembly.compile(data.data).then(async data => {
-                    const d = await init({ module_or_path: data });
+                    let _ = await init({ module_or_path: data });
+                    this.processed = true;
+                    this.port.postMessage({ wasm_init: true });
                 }); 
             } catch (e) {
                 console.error(e);
@@ -255,6 +259,8 @@ class PhaseVocoderProcessor extends OLAProcessor {
         this.port.onmessageerror = (event) => {
             console.log(event);
         }
+
+        this.processed = false;
 
         this.fftSize = this.blockSize;
         this.timeCursor = 0;
@@ -279,27 +285,26 @@ class PhaseVocoderProcessor extends OLAProcessor {
 
                 PhaseVocoderProcessor.applyHannWindow(this.hannWindow, input);
 
-                const freqComplexBuffer = fast_fft(input, this.lookUp);
-                this.computeMagnitudes(freqComplexBuffer);
+                if (this.processed) {
+                    const freqComplexBuffer = fast_fft(input, this.lookUp);
+                    this.computeMagnitudes(freqComplexBuffer);
 
-                this.nbPeaks = PhaseVocoderProcessor.findPeaks(
-                    this.magnitudes,
-                    this.peakIndexes,
-                );
-                this.shiftPeaks(
-                    freqComplexBuffer,
-                    this.freqComplexBufferShifted,
-                    this.peakIndexes,
-                    pitchFactor,
-                );
-                completeSpectrum(this.freqComplexBufferShifted);
+                    this.nbPeaks = PhaseVocoderProcessor.findPeaks(this.magnitudes, this.peakIndexes);
+                    this.freqComplexBufferShifted = shift_peaks(
+                        this.fftSize,
+                        freqComplexBuffer,
+                        this.peakIndexes,
+                        this.magnitudes.length,
+                        this.nbPeaks,
+                        pitchFactor,
+                        this.timeCursor
+                    );
+                    completeSpectrum(this.freqComplexBufferShifted);
 
-                this.timeComplexBuffer = fast_ifft(this.freqComplexBufferShifted, this.lookUp);
-                output.set(this.timeComplexBuffer);
-                PhaseVocoderProcessor.applyHannWindow(
-                    this.hannWindow,
-                    output,
-                );
+                    this.timeComplexBuffer = fast_ifft(this.freqComplexBufferShifted, this.lookUp);
+                    output.set(this.timeComplexBuffer);
+                    PhaseVocoderProcessor.applyHannWindow(this.hannWindow, output);
+                }
             }
         }
 
@@ -350,76 +355,6 @@ class PhaseVocoderProcessor extends OLAProcessor {
         }
 
         return peaks;
-    }
-
-    /** Shift peaks and regions of influence by pitchFactor into new specturm */
-    shiftPeaks(
-        freqComplexBuffer,
-        freqComplexBufferShifted,
-        peakIndexes,
-        pitchFactor,
-    ) {
-        // Zero-fill new spectrum
-        freqComplexBufferShifted.fill(0);
-        const peaks = this.nbPeaks,
-            size = this.fftSize;
-
-        for (let i = 0; i < peaks; ++i) {
-            // Peak with respect to Pitch Factor
-            const peakIndex = peakIndexes[i];
-            const peakIndexShifted = Math.round(peakIndex * pitchFactor);
-
-            if (peakIndexShifted > this.magnitudes.length) {
-                break;
-            }
-
-            // find region of influence
-            let startIndex = 0,
-                endIndex = size;
-            if (i > 0) {
-                const peakIndexBefore = peakIndexes[i - 1];
-                startIndex = peakIndex - ((peakIndex - peakIndexBefore) >> 1);
-            }
-
-            if (i < peaks - 1) {
-                const peakIndexAfter = peakIndexes[i + 1];
-                const mid = peakIndexAfter - peakIndex + 1;
-                endIndex = peakIndex + (mid >> 1);
-            }
-
-            // shift whole region of influence around peak to shifted peak
-            const startOffset = startIndex - peakIndex;
-            const endOffset = endIndex - peakIndex;
-
-            for (let j = startOffset; j < endOffset; j++) {
-                const binIndex = peakIndex + j,
-                    binIndexShifted = peakIndexShifted + j;
-
-                if (binIndexShifted >= this.magnitudes.length) {
-                    break;
-                }
-
-                // Apply phase correction
-                const omegaDelta =
-                    (2 * Math.PI * (binIndexShifted - binIndex)) / size;
-
-                const phaseShiftReal = Math.cos(omegaDelta * this.timeCursor),
-                    phaseShiftImag = Math.sin(omegaDelta * this.timeCursor);
-
-                const valueReal = freqComplexBuffer[binIndex << 1],
-                    valueImag = freqComplexBuffer[(binIndex << 1) + 1];
-
-                const valueShiftedReal =
-                    valueReal * phaseShiftReal - valueImag * phaseShiftImag;
-                const valueShiftedImag =
-                    valueReal * phaseShiftImag + valueImag * phaseShiftReal;
-
-                freqComplexBufferShifted[binIndexShifted << 1] +=
-                    valueShiftedReal;
-                freqComplexBufferShifted[(binIndexShifted << 1) + 1] +=
-                    valueShiftedImag;
-            }
-        }
     }
 }
 

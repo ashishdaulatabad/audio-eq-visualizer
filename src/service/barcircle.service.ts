@@ -33,7 +33,7 @@ export function createBarCircleEq(frequencyIncr: number): BarCircleOptions {
         fn: barCircleFormation,
         frequencyIncr,
         volumeScaling: 0.5,
-        barCircleFactor: 2.5,
+        barCircleFactor: 3.0,
         timeStamp: performance.now(),
         angularVelocity: 2 * Math.PI / 100,
     }
@@ -65,6 +65,7 @@ export function barCircleFormation(
     let i = 0;
     const currentTimestamp = performance.now();
 
+    canvasContext.beginPath();
     for (const [startRange, endRange] of options.bandRanges) {
         const totalBands = (endRange - startRange) / options.frequencyIncr;
         const indexIncrement = totalBands / options.circleBarCount;

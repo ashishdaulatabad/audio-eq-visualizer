@@ -5,7 +5,7 @@ export class PaletteView {
     mainDOM: HTMLElement;
     paletteElement: HTMLElement;
     paletteArray: Array<[string, string]> = [
-        ['#1a1c1d', '#d8dceb'],
+        ['#0a0c0d', '#d8dceb'],
         ['#0f4d19', '#6fc27c'],
         ['#143d59', '#c4f41a'],
         ['#2F3C7E', '#FBEAEB'],

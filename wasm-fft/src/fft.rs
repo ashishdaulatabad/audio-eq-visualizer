@@ -30,7 +30,8 @@ pub fn fast_fft(array: &[f32], lookup_table: &[f32]) -> Vec<f32> {
         out_slice[3] = c1i - c2i;
     });
 
-    let (mut block_size, length, mut length_check_lookup) = (4, array.len(), array.len() >> 2);
+    let (mut block_size, length, mut length_check_lookup) =
+        (4, array.len(), array.len() >> 2);
     while block_size <= length {
         let lookup_incr = length_check_lookup << 1;
         let block_jump = block_size << 1;
@@ -95,8 +96,7 @@ pub fn fast_ifft(c_array: &[f32], lookup_table: &[f32]) -> Vec<f32> {
         out_slice[3] = c1i - c2i;
     });
 
-    let (mut block_size, mut length_check_lookup) =
-        (4, length >> 2);
+    let (mut block_size, mut length_check_lookup) = (4, length >> 2);
     while block_size <= length {
         let lookup_incr = length_check_lookup << 1;
         let block_jump = block_size << 1;
@@ -139,4 +139,3 @@ pub fn fast_ifft(c_array: &[f32], lookup_table: &[f32]) -> Vec<f32> {
 
     result
 }
-
