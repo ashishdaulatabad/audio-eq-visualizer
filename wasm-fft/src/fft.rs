@@ -79,9 +79,9 @@ pub fn fast_ifft(c_array: &[f32], lookup_table: &[f32]) -> Vec<f32> {
     let length = c_array.len() >> 1;
     let index_iter: IndexGen = IndexGen::new(length);
 
-    index_iter.zip(0..length).for_each(|(rev_index, index)| {
-        out[rev_index << 1] = c_array[index << 1];
-        out[(rev_index << 1) + 1] = c_array[(index << 1) + 1];
+    index_iter.zip(c_array.chunks(2)).for_each(|(rev_index, chunk)| {
+        out[rev_index << 1] = chunk[0];
+        out[(rev_index << 1) + 1] = chunk[1];
     });
 
     out.chunks_mut(4).for_each(|out_slice| {
