@@ -11,7 +11,6 @@
         "start": "npm run",
         "tailwindcss": "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch",
         "tailwindcss_build": "npx tailwindcss -i ./styles.css -o ./dist/output.css --minify",
-        "dev": "bun build --watch --outdir=dist/ ./src/index.ts --entry-naming '[dir]/[name].[ext]'",
         "watch": "npm-run-all --parallel build-ts tailwindcss cp-wasm-eq cp-wasm-fft",
         "runall": "npm-run-all --parallel bundle tailwindcss_build cp-wasm-eq cp-wasm-fft cp-html",
         "watch_no_wasm": "npm-run-all --parallel build-ts tailwindcss",

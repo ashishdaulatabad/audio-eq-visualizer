@@ -1,0 +1,5 @@
+[toolchain]
+channel = "stable"
+components = ["wasm-bindgen", "wasm-pack", "web-sys"]
+target = "wasm32-unknown-unknown"
+profile = "minimal"
