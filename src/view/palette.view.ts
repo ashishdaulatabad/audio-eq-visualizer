@@ -10,6 +10,7 @@ export class PaletteView {
         ['#143d59', '#c4f41a'],
         ['#2F3C7E', '#FBEAEB'],
         ['#990011', '#FCF6F5'],
+        ['#AD4F21', '#FCF6E5'],
         ['#50586C', '#DCE2F0'],
         ['#262223', '#DDC6B6'],
         ['#02343F', '#F0EDCC'],

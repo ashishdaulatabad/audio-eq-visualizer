@@ -93,7 +93,7 @@ export class WindowView {
 
         this.canvasAction.draw.push({
             drawKind: 'other',
-            fillColor: this.textColor,
+            textColor: this.textColor,
             width: this.width,
             height: this.height,
             ...createRandomParticleSeeding(256, this.width, this.height, 6, 6, 2, 2)
@@ -114,6 +114,14 @@ export class WindowView {
 
         this.subscriber.subscribeToEvent('palette', (data: [string, string]) => {
             [this.backColor, this.textColor] = data;
+            this.canvasAction.draw
+            this.canvasAction.draw = this.canvasAction.draw.map(value => {
+                return {
+                    ...value,
+                    backColor: this.backColor,
+                    textColor: this.textColor,
+                }
+            });
             this.resetCanvas(this.canvasContext);
         });
     }
@@ -367,7 +375,7 @@ export class WindowView {
         return el('div')
             .mcls('options', 'flex', 'flex-col')
             .inner(
-                ['Bar', 'Bar Circle', 'Wave Circle', 'Wave'].map((type) =>
+                ['Bar', 'Bar Mirrored', 'Bar Circle', /*'Bar Circle Mirrored',*/ 'Wave Circle', 'Wave'].map((type) =>
                     el('button')
                         .mcls('border-0', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'rounded-[3px]')
                         .mcls('text-gray-100', 'p-2')
@@ -543,10 +551,12 @@ export class WindowView {
         }
 
         switch (this.currentMode) {
-            case 'Bar': {
+            case 'Bar':
+            case 'Bar Mirrored': {
                 this.analyser = this.initializeAnalyzerBar();
                 const value = {
-                    ...createOptionsForBar(this.frequencyIncr),
+                    ...createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'),
+                    isReflective: true,
                     drawKind: 'eq',
                     analyser: this.analyser,
                     buffer: this.frequencyBuffer,
@@ -585,10 +595,11 @@ export class WindowView {
                 break;
             }
 
-            case 'Bar Circle': {
+            case 'Bar Circle':
+            case 'Bar Circle Mirrored': {
                 this.analyser = this.initializeAnalyzerBar();
                 const value = {
-                    ...createBarCircleEq(this.frequencyIncr),
+                    ...createBarCircleEq(this.frequencyIncr, this.currentMode === 'Bar Circle Mirrored'),
                     drawKind: 'eq',
                     analyser: this.analyser,
                     buffer: this.frequencyBuffer,

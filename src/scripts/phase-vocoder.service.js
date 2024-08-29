@@ -2,16 +2,6 @@
 
 import init, { fast_fft, fast_ifft, shift_peaks } from "wasm-fft";
 
-function completeSpectrum(spectrum) {
-    let size = spectrum.length;
-    let half = size >>> 1;
-
-    for (let i = 2; i < half; i += 2) {
-        spectrum[size - i] = spectrum[i];
-        spectrum[size - i + 1] = -spectrum[i + 1];
-    }
-}
-
 const BUFFERED_BLOCK_SIZE = 8192;
 
 function genHannWindow(length) {
@@ -299,7 +289,6 @@ class PhaseVocoderProcessor extends OLAProcessor {
                         pitchFactor,
                         this.timeCursor
                     );
-                    completeSpectrum(this.freqComplexBufferShifted);
 
                     this.timeComplexBuffer = fast_ifft(this.freqComplexBufferShifted, this.lookUp);
                     output.set(this.timeComplexBuffer);

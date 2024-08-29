@@ -70,11 +70,20 @@ window.onload = async () => {
         }
     }
 
+    const keyUp = (evt: KeyboardEvent) => {
+        switch (evt.code) {
+            case 'ControlLeft':
+                el(panelView.getView()).tcls('hidden');
+                break;
+        }
+    }
+
     window.addEventListener('resize',  (evt) => setResize(evt));
 
     el(document.body)
         .mcls('w-avail', 'h-avail')
         .evt('keydown', player)
+        .evt('keyup', keyUp)
         .evt('dragover', onDragOver)
         .evt('drop', dropHandler)
         .evt('resize', setResize)

@@ -14,10 +14,11 @@ export type BarOptions = {
     frequencyIncr: number,
     volumeScaling: number,
     barFactor: number,
+    mirrored?: boolean,
     fn: (c: CanvasRenderingContext2D, _: any) => void
 }
 
-export function createOptionsForBar(frequencyIncr: number): BarOptions {
+export function createOptionsForBar(frequencyIncr: number, mirrored?: boolean): BarOptions {
     return {
         type: 'Bar',
         bandBarCount: 16,
@@ -32,6 +33,7 @@ export function createOptionsForBar(frequencyIncr: number): BarOptions {
         frequencyIncr,
         volumeScaling: 0.4,
         barFactor: 2.5,
+        mirrored,
         fn: barFormation
     }
 }
@@ -101,20 +103,44 @@ export function barFormation(
     let x = 0 + (options.lineType === 'Retro' ? 0 : sliceWidth / 2),
         i = 0;
 
-    for (const [startRange, endRange] of options.bandRanges) {
-        const totalBands = (endRange - startRange) / options.frequencyIncr;
-        const indexIncrement = totalBands / options.bandBarCount;
-        let perBandValue = 0;
+    if (!options.mirrored) {
+        for (const [startRange, endRange] of options.bandRanges) {
+            const totalBands = (endRange - startRange) / options.frequencyIncr;
+            const indexIncrement = totalBands / options.bandBarCount;
+            let perBandValue = 0;
 
-        for (; perBandValue < options.bandBarCount; ++perBandValue, i += indexIncrement) {
-            const v = buffer[Math.floor(i)] + 128.0;
+            for (; perBandValue < options.bandBarCount; ++perBandValue, i += indexIncrement) {
+                const v = buffer[Math.floor(i)] + 128.0;
 
-            if (v > 0) {
-                const y = base - utility.linearToPower(v, 4, 256, options.volumeScaling) * options.barFactor;
-                drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, y);
+                if (v > 0) {
+                    const y = base - utility.linearToPower(v, 4, 256, options.volumeScaling) * options.barFactor;
+                    drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, y);
+                }
+
+                x += sliceWidth;
             }
+        }
+    } else {
+        const base = options.height / 2;
 
-            x += sliceWidth;
+        for (const [startRange, endRange] of options.bandRanges) {
+            const totalBands = (endRange - startRange) / options.frequencyIncr;
+            const indexIncrement = totalBands / options.bandBarCount;
+            let perBandValue = 0;
+
+            for (; perBandValue < options.bandBarCount; ++perBandValue, i += indexIncrement) {
+                const v = buffer[Math.floor(i)] + 128.0;
+
+                if (v > 0) {
+                    const y = utility.linearToPower(v, 4, 256, options.volumeScaling) * (options.barFactor / 2);
+                    // canvasContext.strokeStyle = tempFill;
+                    drawLineForBar(options.lineType, canvasContext, x, base - 10, canvasContext.lineWidth, base - 10 - y); 
+                    // canvasContext.strokeStyle = tempFill + "60";
+                    drawLineForBar(options.lineType, canvasContext, x, base + 10, canvasContext.lineWidth, base + 10 + y);
+                }
+
+                x += sliceWidth;
+            }
         }
     }
 

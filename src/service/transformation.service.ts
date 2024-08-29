@@ -63,12 +63,13 @@ const clamp = (value: number, min: number, max: number) => (
 export function applyParticleTransformation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     options: ParticleOptions & {
-        fillColor: string,
+        textColor: string,
         width: number,
         height: number
     }
 ) {
-    canvasContext.fillStyle = options.fillColor;
+    canvasContext.fillStyle = options.textColor;
+    canvasContext.beginPath();
     const currentTimeStamp = performance.now();
 
     const timeChange = (currentTimeStamp - options.timeStamp) / 1000;
