@@ -299,8 +299,7 @@ export class WindowView {
             canvasContext.font = '300 ' + this.fontSize + 'px Helvetica Neue';
             canvasContext.fillStyle = this.textColor;
 
-            const time =
-                this.audioService.useAudioContext().currentTime - this.audioContextTimer + this.offsetTimer;
+            const time = this.sourceBuffer.currentTime;
 
             canvasContext.fillText(utility.timerSec(time), 30, timerPos + this.fontSize + 10);
             canvasContext.fillStyle = this.backColor;
@@ -335,7 +334,9 @@ export class WindowView {
     moveSeekbarClick(evt: MouseEvent) {
         const time = (evt.offsetX / this.seekbarLength) * this.totalTimer;
         this.sourceBuffer.currentTime = time;
-        this.offsetTimer = time;
+        if (this.sourceBuffer.paused) {
+            this.sourceBuffer.play();
+        }
 
         cancelAnimationFrame(this.seekbarAnimationFrame as number);
         el(this.seekBarThumb).styleAttr({ width: evt.offsetX + 'px' });
