@@ -8,7 +8,7 @@ WORKDIR /opt/app
 
 COPY . /opt/app
 
-RUN echo $HOME
+RUN mkdir /opt/app/dist
 
 RUN rustup default stable && cargo install wasm-pack \
     && cd /opt/app/wasm-eq-visualizer && $HOME/.cargo/bin/wasm-pack build --target web \
