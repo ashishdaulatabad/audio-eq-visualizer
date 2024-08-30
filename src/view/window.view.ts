@@ -529,10 +529,7 @@ export class WindowView {
     }
 
     moveSeekbar() {
-        const currentTime =
-            this.audioService.useAudioContext().currentTime -
-            this.audioContextTimer +
-            this.offsetTimer;
+        const currentTime = this.sourceBuffer.currentTime;
         const position = (currentTime / this.totalTimer) * this.seekbarLength;
 
         el(this.seekBarThumb).styleAttr({ width: position + 'px' });
