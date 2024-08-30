@@ -12,7 +12,8 @@ RUN echo $HOME
 
 RUN rustup default stable && cargo install wasm-pack \
     && cd /opt/app/wasm-eq-visualizer && $HOME/.cargo/bin/wasm-pack build --target web \
-    && cd /opt/app/wasm-fft && $HOME/.cargo/bin/wasm-pack build --target web
+    && cd /opt/app/wasm-fft && $HOME/.cargo/bin/wasm-pack build --target web \
+    && cd /opt/app && npm i
 
 CMD ["npm", "run", "build"]
 
