@@ -41,8 +41,6 @@ export class WindowView {
     // @ts-expect-error
     analyser: AnalyserNode;
     canvasContext: CanvasRenderingContext2D;
-    slider: HTMLInputElement;
-    sliderPar: HTMLElement;
     // @ts-expect-error
     webGLContext: WebGLRenderingContext;
     // Buffer Length
@@ -75,6 +73,7 @@ export class WindowView {
     offsetTimer: number = 0;
     lineType: string = 'Normal';
     prevTime: number | null = null;
+    pitchCorrection = 1.0;
 
     constructor(
         private audioService: GlobalAudioService,
@@ -88,8 +87,6 @@ export class WindowView {
         this.eqOptionDOM = this.buildOptions();
         this.button = this.createAudioPermissionButton();
         this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
-        this.slider = this.setSlider();
-        this.sliderPar = this.setSliderContainer(this.slider);
 
         this.canvasAction.draw.push({
             drawKind: 'other',
@@ -177,12 +174,21 @@ export class WindowView {
     }
 
     getAllAttachableViews(): HTMLElement[] {
-        return [this.eqOptionDOM, this.sliderPar, this.button, this.createFileSelectionButton()];
+        return [
+            this.eqOptionDOM,
+            this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
+            this.setSliderContainer('Speed Factor', this.setSlider('speed')),
+            this.button,
+            this.createFileSelectionButton()
+        ];
     }
 
     setSourceNode(
         buffer: AudioBuffer,
         startAt: number | null = null,
+        options?: {
+            playbackRate: number
+        }
     ): [AudioBuffer, AudioBufferSourceNode] {
         if (this.sourceBuffer) {
             this.bufferSourceNode.stop();
@@ -206,6 +212,10 @@ export class WindowView {
             bufferSourceNode.start(0, startAt);
         }
 
+        if (options?.playbackRate) {
+            bufferSourceNode.playbackRate.value = options.playbackRate;
+        }
+
         return [sourceBuffer, bufferSourceNode];
     }
 
@@ -222,14 +232,14 @@ export class WindowView {
         }
     }
 
-    setSliderContainer(...content: HTMLElement[]) {
-        const title = WindowView.constructTitle('Pitch Factor');
+    setSliderContainer(sliderTitle: string, ...content: HTMLElement[]) {
+        const title = WindowView.constructTitle(sliderTitle);
         const viewDom = el('div')
             .mcls('bg-gray-600/50', 'rounded-sm', 'p-2', 'text-gray-200')
             .inner([
                 title,
                 el('div').innerHtml('1.0'),
-                el('div').inners(...content)
+                el('div').mcls('flex', 'flex-col').inners(...content)
             ])
             .get();
 
@@ -238,20 +248,30 @@ export class WindowView {
         el(button).evt('click', (_) => el(view).tcls('collapsed'));
         return viewDom;
     }
-
+    
     setSliderValue(evt: Event) {
         const elem = evt.target as HTMLInputElement;
-        el(this.sliderPar.children[1] as HTMLElement).innerHtml(elem.value as string);
-        this.audioService.changePitchFactor(parseFloat(elem.value));
+        const grandParent = elem.parentElement?.parentElement as HTMLElement;
+        grandParent.children[1].innerHTML = elem.value.toString();
+
+        switch (elem.getAttribute('data-change')) {
+            case 'pitch':
+                this.audioService.changePitchFactor(parseFloat(elem.value));
+                break;
+            case 'speed':
+                this.bufferSourceNode.playbackRate.value = parseFloat(elem.value);
+                break;
+        }
     }
 
-    setSlider() {
+    setSlider(change: string) {
         return el('input')
             .attr('type', 'range')
+            .attr('data-change', change)
             .attr('min', '0.6')
             .attr('max', '1.4')
             .attr('value', '1.0')
-            .attr('step', '0.001')
+            .attr('step', '0.01')
             .evt('input', this.setSliderValue.bind(this))
             .get<HTMLInputElement>();
     }
@@ -309,6 +329,7 @@ export class WindowView {
 
     moveSeekbarClick(evt: MouseEvent) {
         const time = (evt.offsetX / this.seekbarLength) * this.totalTimer;
+        const playbackRate = this.bufferSourceNode.playbackRate.value;
         this.bufferSourceNode.stop();
 
         cancelAnimationFrame(this.seekbarAnimationFrame as number);
@@ -317,6 +338,7 @@ export class WindowView {
         [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(
             this.sourceBuffer,
             time,
+            { playbackRate }
         );
         this.requestSeekbarAnimation();
     }
@@ -458,6 +480,12 @@ export class WindowView {
     setBufferSize() {
         const frequency = this.sourceBuffer.sampleRate / 2.0;
         return frequency / this.bufferLength;
+    }
+
+    setPitchCorrection() {
+        const value = this.bufferSourceNode.playbackRate.value;
+        this.pitchCorrection = value;
+        
     }
 
     initializeAnalyzerBar() {

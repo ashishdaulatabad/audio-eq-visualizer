@@ -22,7 +22,7 @@ export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): Ba
         type: 'BarCircle',
         angleInit: 0,
         lineType: 'Default',
-        radius: 175,
+        radius: 200,
         circleBarCount: 20,
         bandRanges: [
             [20, 260],
@@ -34,7 +34,7 @@ export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): Ba
         fn: barCircleFormation,
         frequencyIncr,
         volumeScaling: 0.5,
-        barCircleFactor: 3.0,
+        barCircleFactor: 3.2,
         timeStamp: performance.now(),
         mirrored,
         angularVelocity: 2 * Math.PI / 100,

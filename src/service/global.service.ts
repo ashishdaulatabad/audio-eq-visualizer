@@ -52,6 +52,12 @@ export class GlobalAudioService {
         currentPitch.value = value;
     }
 
+    changeSpeedFactor(value: number) {
+        // @ts-expect-error
+        const currentRate = this.audioWorkletNode.parameters.get('playbackRate');
+        currentRate.value = value;
+    }
+
     useAudioContext() {
         if (!this.audioContext) {
             this.audioContext = new AudioContext();

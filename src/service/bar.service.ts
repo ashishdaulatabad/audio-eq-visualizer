@@ -32,7 +32,7 @@ export function createOptionsForBar(frequencyIncr: number, mirrored?: boolean): 
         ],
         frequencyIncr,
         volumeScaling: 0.4,
-        barFactor: 2.5,
+        barFactor: 3.0,
         mirrored,
         fn: barFormation
     }
@@ -74,7 +74,7 @@ function drawLineForBar(
     context.moveTo(fromX, fromY);
     switch (lineType) {
         case 'Normal':
-            context.lineTo(fromX, toY);
+            context.fillRect(fromX, fromY, context.lineWidth, toY - fromY);
             break;
 
         case 'Retro':
@@ -100,8 +100,7 @@ export function barFormation(
     canvasContext.lineCap = 'square';
 
     canvasContext.beginPath();
-    let x = 0 + (options.lineType === 'Retro' ? 0 : sliceWidth / 2),
-        i = 0;
+    let x = 0, i = 0;
 
     if (!options.mirrored) {
         for (const [startRange, endRange] of options.bandRanges) {
@@ -121,7 +120,8 @@ export function barFormation(
             }
         }
     } else {
-        const base = options.height / 2;
+        const base = (options.height / 2) + 50;
+        const tempFill = canvasContext.strokeStyle;
 
         for (const [startRange, endRange] of options.bandRanges) {
             const totalBands = (endRange - startRange) / options.frequencyIncr;
@@ -132,11 +132,11 @@ export function barFormation(
                 const v = buffer[Math.floor(i)] + 128.0;
 
                 if (v > 0) {
-                    const y = utility.linearToPower(v, 4, 256, options.volumeScaling) * (options.barFactor / 2);
-                    // canvasContext.strokeStyle = tempFill;
-                    drawLineForBar(options.lineType, canvasContext, x, base - 10, canvasContext.lineWidth, base - 10 - y); 
-                    // canvasContext.strokeStyle = tempFill + "60";
-                    drawLineForBar(options.lineType, canvasContext, x, base + 10, canvasContext.lineWidth, base + 10 + y);
+                    const y = utility.linearToPower(v, 4, 256, options.volumeScaling) * (options.barFactor / 1.65);
+                    canvasContext.fillStyle = tempFill;
+                    drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, base - y); 
+                    canvasContext.fillStyle = tempFill + "90";
+                    drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, base + y);
                 }
 
                 x += sliceWidth;
