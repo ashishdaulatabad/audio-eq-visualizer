@@ -53,9 +53,9 @@ export class WindowView {
     seekbarAnimationFrame: number | null = 0;
     /// Canvas Bar
     // @ts-expect-error
-    sourceBuffer: AudioBuffer;
+    sourceBuffer: HTMLAudioElement;
     // @ts-expect-error
-    bufferSourceNode: AudioBufferSourceNode;
+    bufferSourceNode: MediaElementAudioSourceNode;
     // current mode
     currentMode: string = 'Wave';
     // frequency increment
@@ -104,7 +104,7 @@ export class WindowView {
             const fileSplit = data.title.split('.');
             fileSplit.pop();
             this.fileName = fileSplit.join('.');
-            [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(data.buffer);
+            // this.bufferSourceNode = this.setSourceNode(data.buffer);
             this.timer = this.audioService.useAudioContext().currentTime;
             this.run();
         });
@@ -145,7 +145,13 @@ export class WindowView {
             .get();
 
         input.onchange = (event: any) => {
-            this.audioService.setAudioBuffer(event.target.files[0]);
+            [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(event.target.files[0], 0, { playbackRate: 1 })
+            const fileSplit = event.target.files[0].name.split('.');
+            this.audioService.setPaused(false);
+            fileSplit.pop();
+            this.fileName = fileSplit.join('.');
+            this.timer = this.audioService.useAudioContext().currentTime;
+            this.run();
         }
         input.click();
 
@@ -184,42 +190,41 @@ export class WindowView {
     }
 
     setSourceNode(
-        buffer: AudioBuffer,
+        file: File | HTMLAudioElement,
         startAt: number | null = null,
         options?: {
             playbackRate: number
         }
-    ): [AudioBuffer, AudioBufferSourceNode] {
+    ): [HTMLAudioElement, MediaElementAudioSourceNode] {
         if (this.sourceBuffer) {
-            this.bufferSourceNode.stop();
             this.bufferSourceNode.disconnect();
         }
 
-        const sourceBuffer = buffer;
-        const bufferSourceNode = this.audioService
-            .useAudioContext()
-            .createBufferSource();
+        let sourceBuffer: HTMLAudioElement;
+        if (file instanceof File) {
+            sourceBuffer = new Audio(URL.createObjectURL(file))
 
-        bufferSourceNode.buffer = buffer;
-        this.audioService.makeConnection(bufferSourceNode);
-        this.setDurationAndTimeDetails(sourceBuffer);
-
-        if (!startAt) {
-            this.offsetTimer = 0;
-            bufferSourceNode.start();
+            sourceBuffer.onloadedmetadata = () => {
+                this.setDurationAndTimeDetails(sourceBuffer);
+            }
         } else {
-            this.offsetTimer = startAt;
-            bufferSourceNode.start(0, startAt);
+            sourceBuffer = file;
         }
+        const bufferSourceNode = this.audioService.useAudioContext().createMediaElementSource(sourceBuffer);
+
+        this.audioService.makeConnection(bufferSourceNode);
+
+        this.offsetTimer = 0;
+        bufferSourceNode.mediaElement.play();
 
         if (options?.playbackRate) {
-            bufferSourceNode.playbackRate.value = options.playbackRate;
+            bufferSourceNode.mediaElement.playbackRate = options.playbackRate;
         }
 
         return [sourceBuffer, bufferSourceNode];
     }
 
-    setDurationAndTimeDetails(sourceBuffer: AudioBuffer) {
+    setDurationAndTimeDetails(sourceBuffer: HTMLAudioElement) {
         this.totalTimer = sourceBuffer.duration;
         this.audioContextTimer = this.audioService.useAudioContext().currentTime;
     }
@@ -259,7 +264,7 @@ export class WindowView {
                 this.audioService.changePitchFactor(parseFloat(elem.value));
                 break;
             case 'speed':
-                this.bufferSourceNode.playbackRate.value = parseFloat(elem.value);
+                this.bufferSourceNode.mediaElement.playbackRate = parseFloat(elem.value);
                 break;
         }
     }
@@ -329,17 +334,11 @@ export class WindowView {
 
     moveSeekbarClick(evt: MouseEvent) {
         const time = (evt.offsetX / this.seekbarLength) * this.totalTimer;
-        const playbackRate = this.bufferSourceNode.playbackRate.value;
-        this.bufferSourceNode.stop();
+        this.sourceBuffer.currentTime = time;
+        this.offsetTimer = time;
 
         cancelAnimationFrame(this.seekbarAnimationFrame as number);
-
         el(this.seekBarThumb).styleAttr({ width: evt.offsetX + 'px' });
-        [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(
-            this.sourceBuffer,
-            time,
-            { playbackRate }
-        );
         this.requestSeekbarAnimation();
     }
 
@@ -478,14 +477,8 @@ export class WindowView {
     }
 
     setBufferSize() {
-        const frequency = this.sourceBuffer.sampleRate / 2.0;
+        const frequency = this.audioService.useAudioContext().sampleRate / 2.0;
         return frequency / this.bufferLength;
-    }
-
-    setPitchCorrection() {
-        const value = this.bufferSourceNode.playbackRate.value;
-        this.pitchCorrection = value;
-        
     }
 
     initializeAnalyzerBar() {

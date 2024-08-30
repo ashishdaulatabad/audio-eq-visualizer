@@ -68,9 +68,14 @@ export class GlobalAudioService {
         return this.audioContext;
     }
 
+    setPaused(paused: boolean) {
+        this.paused = paused;
+    }
+
     setAudioBuffer(file: File) {
         const fileReader = new FileReader();
 
+        console.log(new Audio(URL.createObjectURL(file)));
         fileReader.onloadend = (event) => {
             if (event.target) {
                 this.useAudioContext().decodeAudioData(event.target.result as ArrayBuffer)
@@ -78,12 +83,8 @@ export class GlobalAudioService {
                         this.paused = false;
                         this.fileObservable$.fire({ title: file.name, buffer });
                     })
-                    .catch((err) => console.log('Could not load mp3 file'));
+                    .catch((err) => console.error('Could not load mp3 file', err));
             }
-        }
-
-        if (file instanceof File) {
-            fileReader.readAsArrayBuffer(file);
         }
     }
 
