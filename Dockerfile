@@ -11,9 +11,8 @@ COPY . /opt/app
 RUN mkdir /opt/app/dist
 
 RUN rustup default stable && cargo install wasm-pack \
-    && cargo --config net.git-fetch-with-cli=true fetch \
     && cd /opt/app/wasm-eq-visualizer && $HOME/.cargo/bin/wasm-pack build --target web \
-    && cd /opt/app/wasm-fft && $HOME/.cargo/bin/wasm-pack build --target web \
+    && cd /opt/app/wasm-fft && cargo --config net.git-fetch-with-cli=true fetch && $HOME/.cargo/bin/wasm-pack build --target web \
     && cd /opt/app && npm i
 
 CMD ["npm", "run", "build"]
