@@ -1,5 +1,4 @@
 mod fft;
-mod index_generator;
 mod phase_vocoder_utils;
 mod utils;
 
