@@ -1,7 +1,7 @@
 import { el } from "../common/domhelper";
 import { Subscriber } from "../common/subscriber";
 
-export class PaletteView {
+export class CanvasThemeSelectorView {
     mainDOM: HTMLElement;
     paletteElement: HTMLElement;
     paletteArray: Array<[string, string]> = [
@@ -121,7 +121,7 @@ export class PaletteView {
         const title = el('span')
             .mcls('text-[18px]', 'font-serif', 'text-gray-100', 'block', 'items-center', 'flex')
             .inner([
-                el('span').mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold').innerText('Color Palette'),
+                el('span').mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold').innerText('Color Theme'),
                 el('button')
                     .mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-300', 'border-[0]', 'ml-4', 'self-end', 'rotate-90')
                     .innerHtml('>')

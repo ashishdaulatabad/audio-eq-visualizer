@@ -1,6 +1,16 @@
 use crate::index_generator::IndexGen;
 use wasm_bindgen::prelude::*;
 
+/// Create a lookup table for faster FFT computation
+#[wasm_bindgen]
+pub fn generate_lookup_table(length: usize) -> Vec<f32> {
+    let length_f32 = length as f32;
+    (0..length)
+        .map(|c| c as f32)
+        .map(|c| c * std::f32::consts::PI * 2.0 / length_f32)
+        .collect::<Vec<f32>>()
+}
+
 /// Perform Fast Fourier Transform
 /// on `n` values of Vec, and returns the floating values
 ///

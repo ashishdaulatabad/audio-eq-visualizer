@@ -1,7 +1,7 @@
 import { el } from "./common/domhelper";
 import { Subscriber } from "./common/subscriber";
 import { GlobalAudioService } from './service/global.service';
-import { PaletteView } from "./view/palette.view";
+import { CanvasThemeSelectorView } from "./view/palette.view";
 import { PanelView } from "./view/panel.view";
 import { WindowView } from "./view/window.view";
 
@@ -31,11 +31,11 @@ window.onload = async () => {
 
     var globalAudioService = new GlobalAudioService(subscriber, wasmBin);
 
-    let palette = new PaletteView(subscriber);
+    let canvasThemeSelector = new CanvasThemeSelectorView(subscriber);
     let window2 = new WindowView(globalAudioService, subscriber);
     let panelView = new PanelView(subscriber);
     panelView.attachViews(window2.getAllAttachableViews());
-    panelView.attachViews(palette.getAllAttachableViews());
+    panelView.attachViews(canvasThemeSelector.getAllAttachableViews());
 
     const dropHandler = (event: DragEvent) => {
         event.preventDefault();

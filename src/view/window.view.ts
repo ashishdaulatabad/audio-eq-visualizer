@@ -132,7 +132,7 @@ export class WindowView {
 
     createAudioPermissionButton() {
         return el('button')
-            .mcls('bg-blue-600', 'block', 'w-avail', 'text-gray-300', 'p-2', 'pb-1', 'hover:bg-blue-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-500')
+            .mcls('bg-blue-500', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
             .innerHtml('Allow Media Control')
             .evt('click', this.allowMediaControl.bind(this))
             .get();
@@ -160,7 +160,7 @@ export class WindowView {
     
     createFileSelectionButton() {
         return el('button')
-            .mcls('bg-blue-600', 'block', 'w-avail', 'text-gray-300', 'p-2', 'pb-1', 'hover:bg-blue-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-500')
+            .mcls('bg-blue-500', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
             .innerHtml('Select Audio File')
             .evt('click', this.selectMediaFile.bind(this))
             .get();

@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy)]
-pub struct IndexGen {
+pub(crate) struct IndexGen {
     len: usize,
     base: usize,
     head: usize,
