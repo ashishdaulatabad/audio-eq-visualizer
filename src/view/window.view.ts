@@ -275,7 +275,7 @@ export class WindowView {
             .attr('data-change', change)
             .attr('min', '0.6')
             .attr('max', '1.4')
-            .attr('value', '1.0')
+            .attr('value', '1')
             .attr('step', '0.01')
             .evt('input', this.setSliderValue.bind(this))
             .get<HTMLInputElement>();
