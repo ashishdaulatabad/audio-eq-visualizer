@@ -1,5 +1,3 @@
-mod utils;
-
 use wasm_bindgen::{prelude::*, Clamped};
 use web_sys::ImageData;
 

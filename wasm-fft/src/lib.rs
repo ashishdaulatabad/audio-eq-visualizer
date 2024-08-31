@@ -1,6 +1,5 @@
 mod fft;
 mod phase_vocoder_utils;
-mod utils;
 
 use wasm_bindgen::{prelude::*, Clamped};
 
