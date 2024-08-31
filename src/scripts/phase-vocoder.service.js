@@ -1,6 +1,6 @@
 "use strict";
 
-import init, { fast_fft, fast_ifft, shift_peaks } from "wasm-fft";
+import init, { process_ola } from "wasm-fft";
 
 const BUFFERED_BLOCK_SIZE = 8192;
 
@@ -273,77 +273,13 @@ class PhaseVocoderProcessor extends OLAProcessor {
                 const input = inputs[i][j];
                 const output = outputs[i][j];
 
-                PhaseVocoderProcessor.applyHannWindow(this.hannWindow, input);
-
                 if (this.processed) {
-                    const freqComplexBuffer = fast_fft(input, this.lookUp);
-                    this.computeMagnitudes(freqComplexBuffer);
-
-                    this.nbPeaks = PhaseVocoderProcessor.findPeaks(this.magnitudes, this.peakIndexes);
-                    this.freqComplexBufferShifted = shift_peaks(
-                        this.fftSize,
-                        freqComplexBuffer,
-                        this.peakIndexes,
-                        this.magnitudes.length,
-                        this.nbPeaks,
-                        pitchFactor,
-                        this.timeCursor
-                    );
-
-                    this.timeComplexBuffer = fast_ifft(this.freqComplexBufferShifted, this.lookUp);
-                    output.set(this.timeComplexBuffer);
-                    PhaseVocoderProcessor.applyHannWindow(this.hannWindow, output);
+                    output.set(process_ola(input, this.hannWindow, this.lookUp, pitchFactor, this.timeCursor));
                 }
             }
         }
 
         this.timeCursor += this.hopSize;
-    }
-
-    /** Apply Hann window in-place */
-    static applyHannWindow(hannWindow, input) {
-        for (let i = 0; i < input.length; ++i) {
-            input[i] *= hannWindow[i];
-        }
-    }
-
-    /** Compute squared magnitudes for peak finding **/
-    computeMagnitudes(complexBuffer) {
-        const magnitudeRef = this.magnitudes,
-            length = this.magnitudes.length,
-            cBuffer = complexBuffer;
-
-        for (let i = 0, j = 0; i < length; ++i, j += 2) {
-            const real = cBuffer[j];
-            const imag = cBuffer[j + 1];
-            magnitudeRef[i] = real ** 2 + imag ** 2;
-        }
-    }
-
-    /** Find peaks in spectrum magnitudes **/
-    static findPeaks(magnitudes, peakIndexes) {
-        let peaks = 0,
-            i = 2;
-        const end = magnitudes.length - 2;
-
-        while (i < end) {
-            const mag = magnitudes[i];
-            if (magnitudes[i - 1] >= mag || magnitudes[i - 2] >= mag) {
-                ++i;
-                continue;
-            }
-
-            if (magnitudes[i + 1] >= mag || magnitudes[i + 2] >= mag) {
-                ++i;
-                continue;
-            }
-
-            peakIndexes[peaks] = i;
-            ++peaks;
-            i += 2;
-        }
-
-        return peaks;
     }
 }
 
