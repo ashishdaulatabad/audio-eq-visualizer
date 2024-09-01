@@ -1,21 +1,5 @@
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
-    #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn logw(number: usize);
-    #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn logw2(number: usize, number2: usize);
-    #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn logw2i(number: isize, number2: isize);
-    #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn logsw(s: &str, number: usize);
-    #[wasm_bindgen(js_namespace = console, js_name = log)]
-    fn alert(s: &str);
-}
-
 /// Find all the peaks performed during FFT of
 /// `complex_array`
 fn find_peaks(complex_array: &[f32]) -> Vec<isize> {

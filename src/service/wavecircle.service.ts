@@ -2,7 +2,7 @@ import { Complex } from "../common/complex";
 import utility from "../common/utility";
 
 export type WaveCircleOptions = {
-    type: 'WaveCircle',
+    type: 'Wave Circle',
     angleInit: number,
     lineType: string,
     radius: number,
@@ -16,12 +16,12 @@ export type WaveCircleOptions = {
     angularVelocity: number,
 }
 
-export function createOptionsForWaveCircle(frequencyIncr: number): WaveCircleOptions {
+export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?: boolean): WaveCircleOptions {
     return {
-        type: 'WaveCircle',
+        type: 'Wave Circle',
         angleInit: 0,
         lineType: 'Normal',
-        radius: 175,
+        radius: isCircleSpike ? 225 : 175,
         bandRanges: [
             [20, 260],
             [260, 500],
@@ -29,11 +29,11 @@ export function createOptionsForWaveCircle(frequencyIncr: number): WaveCircleOpt
             [2000, 5000],
             [5000, 15000],
         ],
-        fn: waveCircleFormation,
+        fn: isCircleSpike ? circleSpikeFormation : waveCircleFormation,
         waveCounts: 24,
         frequencyIncr,
         volumeScaling: 0.5,
-        barCircleFactor: 2.25,
+        barCircleFactor: isCircleSpike ? 1.75 : 2.25,
         timeStamp: performance.now(),
         angularVelocity: 2 * Math.PI / 100,
     }
@@ -53,7 +53,7 @@ export function waveCircleFormation(
     const anglePerBar = (2 * Math.PI) / (options.bandRanges.length * options.waveCounts);
     let theta = options.angleInit;
 
-    let angle = Complex.vec(options.radius, theta);
+    let angle = Complex.vec(options.height / 4, theta);
     const change = Complex.unit(anglePerBar);
     let unitAng = Complex.unit(theta);
     canvasContext.lineWidth = 2;
@@ -99,6 +99,109 @@ export function waveCircleFormation(
             theta += anglePerBar;
         }
     }
+    options.angleInit += ((currentTimestamp - options.timeStamp) / 1000) * options.angularVelocity;
+    options.timeStamp = currentTimestamp;
+
+    canvasContext.stroke();
+}
+
+export function circleSpikeFormation(
+    canvasContext: CanvasRenderingContext2D,
+    options: WaveCircleOptions & {
+        buffer: Float32Array,
+        width: number,
+        analyser: AnalyserNode,
+        height: number,
+    }
+) {
+    options.analyser.getFloatFrequencyData(options.buffer);
+    const centerX = options.width / 2,
+          centerY = options.height / 2,
+          anglePerBar = Math.PI / (options.bandRanges.length * options.waveCounts);
+
+    let theta = options.angleInit;
+    canvasContext.lineWidth = 3;
+
+    let i = 0, firstPoint = null, prevPoints = [0, 0, 0, 0], arrayIndex = 0;
+    const currentTimestamp = performance.now();
+    canvasContext.beginPath();
+
+    const values: Float32Array = new Float32Array(options.bandRanges.length * options.waveCounts);
+
+    for (const [startRange, endRange] of options.bandRanges) {
+        const totalBands = (endRange - startRange) / options.frequencyIncr;
+        const indexIncrement = totalBands / options.waveCounts;
+        let perBandValue = 0;
+
+        for (; perBandValue < options.waveCounts; ++perBandValue, i += indexIncrement) {
+            const v = options.buffer[Math.ceil(i)] + 128.0;
+            values[arrayIndex++] = utility.linearToPower(v, 4, 256, options.volumeScaling) * options.barCircleFactor;
+        }
+    }
+
+    const spectrum = new Float32Array(values.length * 2);
+    spectrum.subarray(0, values.length).set(values);
+    spectrum.subarray(values.length).set(values.reverse());
+
+    const averageBass = spectrum
+        .subarray(options.waveCounts)
+        .reduce((prev, curr) => prev + curr, 0) / options.waveCounts;
+    
+    let angle = Complex.vec((options.height + utility.linearToPower(averageBass, 2, 256, 1.5)) / 4, theta);
+    let change = Complex.unit(anglePerBar);
+    let unitAng = Complex.unit(theta);
+    canvasContext.lineWidth = 3;
+
+    for (const y of spectrum) {
+        const normal = unitAng.muln(y);
+        const [xc, yc] = angle.coord();
+        const [xb, yb] = normal.coord();
+
+        if (firstPoint === null) {
+            firstPoint = [xc + centerX, yc + centerY, xb, yb];
+        } else {
+            canvasContext.moveTo(prevPoints[0] + prevPoints[2], prevPoints[1] + prevPoints[3]);
+            canvasContext.quadraticCurveTo(
+                prevPoints[0] + prevPoints[2],
+                prevPoints[1] + prevPoints[3],
+                xc + centerX + xb,
+                yc + centerY + yb,
+            );
+
+            canvasContext.moveTo(prevPoints[0] - prevPoints[2], prevPoints[1] - prevPoints[3]);
+            canvasContext.quadraticCurveTo(
+                prevPoints[0] - prevPoints[2],
+                prevPoints[1] - prevPoints[3],
+                xc + centerX - xb,
+                yc + centerY - yb,
+            );
+            canvasContext.moveTo(xc + centerX + xb, yc + centerY + yb);
+            canvasContext.lineTo(
+                xc + centerX - xb,
+                yc + centerY - yb,
+            );
+        }
+
+        prevPoints = [xc + centerX, yc + centerY, xb, yb];
+
+        angle = angle.mul(change);
+        unitAng = unitAng.mul(change);
+        theta += anglePerBar;
+    }
+
+    canvasContext.moveTo(prevPoints[0] + prevPoints[2], prevPoints[1] + prevPoints[3]);
+
+    canvasContext.quadraticCurveTo(
+        // @ts-expect-error
+        prevPoints[0] + prevPoints[2], prevPoints[1] + prevPoints[3], firstPoint[0] + firstPoint[2], firstPoint[1] + firstPoint[3],
+    );
+
+    canvasContext.moveTo(prevPoints[0] - prevPoints[2], prevPoints[1] - prevPoints[3]);
+    canvasContext.quadraticCurveTo(
+        // @ts-expect-error
+        prevPoints[0] - prevPoints[2], prevPoints[1] - prevPoints[3], firstPoint[0] - firstPoint[2], firstPoint[1] - firstPoint[3],
+    );
+    
     options.angleInit += ((currentTimestamp - options.timeStamp) / 1000) * options.angularVelocity;
     options.timeStamp = currentTimestamp;
 

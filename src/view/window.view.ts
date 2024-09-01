@@ -2,11 +2,7 @@ import { el } from '../common/domhelper';
 import { GlobalAudioService } from '../service/global.service';
 import { Subscriber } from '../common/subscriber';
 import utility from '../common/utility';
-import {
-    ParticleOptions,
-    applyTransformation,
-    createRandomParticleSeeding,
-} from '../service/transformation.service';
+import { applyTransformation, createRandomParticleSeeding } from '../service/transformation.service';
 import { createOptionsForBar } from '../service/bar.service';
 import { createBarCircleEq } from '../service/barcircle.service';
 import { createOptionsForWaveCircle } from '../service/wavecircle.service';
@@ -80,9 +76,11 @@ export class WindowView {
         private subscriber: Subscriber,
     ) {
         [this.seekBarThumb, this.seekbarDOM] = this.constructSeekbar();
-        [this.canvas, this.canvasContext] = this.buildCanvas();
-        this.resetCanvas(this.canvasContext);
+        const { canvas, canvasContext } = this.buildCanvas();
+        this.canvas = canvas;
+        this.canvasContext = canvasContext;
 
+        this.resetCanvas(this.canvasContext);
         this.fps = this.initializeFpsCounter();
         this.eqOptionDOM = this.buildOptions();
         this.button = this.createAudioPermissionButton();
@@ -100,19 +98,10 @@ export class WindowView {
         this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
         this.offContext = this.offscreenCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
 
-        this.subscriber.subscribeToEvent('musicchanged', (data: { title: string; buffer: AudioBuffer }) => {
-            const fileSplit = data.title.split('.');
-            fileSplit.pop();
-            this.fileName = fileSplit.join('.');
-            // this.bufferSourceNode = this.setSourceNode(data.buffer);
-            this.timer = this.audioService.useAudioContext().currentTime;
-            this.run();
-        });
-
         this.subscriber.subscribeToEvent('palette', (data: [string, string]) => {
             [this.backColor, this.textColor] = data;
             this.canvasAction.draw
-            this.canvasAction.draw = this.canvasAction.draw.map(value => {
+            this.canvasAction.draw = this.canvasAction.draw.map((value: any) => {
                 return {
                     ...value,
                     backColor: this.backColor,
@@ -138,7 +127,7 @@ export class WindowView {
             .get();
     }
 
-    selectMediaFile() {
+    selectMediaFile(event: MouseEvent) {
         const input = el('input')
             .attr('type', 'file')
             .attr('accept', 'audio/*')
@@ -154,8 +143,6 @@ export class WindowView {
             this.run();
         }
         input.click();
-
-        return input;
     }
     
     createFileSelectionButton() {
@@ -167,9 +154,10 @@ export class WindowView {
     }
 
     resetCanvasType(contextType: string) {
-        const [canvas, context] = this.buildCanvas(contextType);
+        const { canvas, canvasContext } = this.buildCanvas(contextType);
         this.mainDOM.replaceChild(canvas, this.canvas);
-        [this.canvas, this.canvasContext] = [canvas, context];
+        this.canvas = canvas;
+        this.canvasContext = canvasContext;
     }
 
     initializeFpsCounter() {
@@ -227,7 +215,7 @@ export class WindowView {
     setDurationAndTimeDetails(sourceBuffer: HTMLAudioElement) {
         this.totalTimer = sourceBuffer.duration;
         this.audioContextTimer = this.audioService.useAudioContext().currentTime;
-    }
+    } 
 
     onPlayerPausedOrResumed() {
         if (this.audioService.paused) {
@@ -397,7 +385,7 @@ export class WindowView {
         return el('div')
             .mcls('options', 'flex', 'flex-col')
             .inner(
-                ['Bar', 'Bar Mirrored', 'Bar Circle', /*'Bar Circle Mirrored',*/ 'Wave Circle', 'Wave'].map((type) =>
+                ['Bar', 'Bar Mirrored', 'Bar Circle', /*'Bar Circle Mirrored',*/ 'Wave Circle', 'Circle Spike', 'Wave'].map((type) =>
                     el('button')
                         .mcls('border-0', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'rounded-[3px]')
                         .mcls('text-gray-100', 'p-2')
@@ -446,7 +434,10 @@ export class WindowView {
         canvasContext.strokeStyle = this.textColor;
     }
 
-    buildCanvas(contextType: string = '2d'): [HTMLCanvasElement, CanvasRenderingContext2D] {
+    buildCanvas(contextType: string = '2d'): { 
+        canvas: HTMLCanvasElement,
+        canvasContext: CanvasRenderingContext2D 
+    } {
         this.width = document.documentElement.clientWidth;
         this.height = document.documentElement.clientHeight;
 
@@ -457,7 +448,7 @@ export class WindowView {
             .get<HTMLCanvasElement>();
 
         const canvasContext = canvas.getContext(contextType) as CanvasRenderingContext2D;
-        return [canvas, canvasContext];
+        return { canvas, canvasContext };
     }
 
     initializeAnalyzerWave() {
@@ -600,10 +591,11 @@ export class WindowView {
                 break;
             }
 
-            case 'Wave Circle': {
+            case 'Wave Circle':
+            case 'Circle Spike': {
                 this.analyser = this.initializeAnalyzerBar();
                 const value = {
-                    ...createOptionsForWaveCircle(this.frequencyIncr),
+                    ...createOptionsForWaveCircle(this.frequencyIncr, this.currentMode === 'Circle Spike'),
                     drawKind: 'eq',
                     analyser: this.analyser,
                     buffer: this.frequencyBuffer,
@@ -613,7 +605,7 @@ export class WindowView {
                 addOrInsert(this.canvasAction, value);
                 break;
             }
-
+            
             case 'Bar Circle':
             case 'Bar Circle Mirrored': {
                 this.analyser = this.initializeAnalyzerBar();
