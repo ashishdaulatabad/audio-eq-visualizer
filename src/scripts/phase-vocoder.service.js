@@ -247,7 +247,7 @@ class PhaseVocoderProcessor extends OLAProcessor {
         super(options);
         this.port.onmessage = async (event) => this.onmessage(event.data);
         this.port.onmessageerror = (event) => {
-            console.log(event);
+            console.error('Error in PhaseVocoder', event);
         }
 
         this.processed = false;
@@ -257,12 +257,6 @@ class PhaseVocoderProcessor extends OLAProcessor {
 
         this.lookUp = generateWLookup(this.fftSize);
         this.hannWindow = genHannWindow(this.blockSize);
-
-        this.freqComplexBufferShifted = new Float32Array(this.fftSize << 1);
-        this.timeComplexBuffer = new Float32Array(this.fftSize);
-        this.magnitudes = new Float32Array(this.fftSize / 2 + 1);
-        this.peakIndexes = new Int32Array(this.magnitudes.length / 4 + 1);
-        this.nbPeaks = 0;
     }
 
     processOLA(inputs, outputs, parameters) {
