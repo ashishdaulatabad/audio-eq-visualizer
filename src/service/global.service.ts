@@ -72,22 +72,6 @@ export class GlobalAudioService {
         this.paused = paused;
     }
 
-    setAudioBuffer(file: File) {
-        const fileReader = new FileReader();
-
-        console.log(new Audio(URL.createObjectURL(file)));
-        fileReader.onloadend = (event) => {
-            if (event.target) {
-                this.useAudioContext().decodeAudioData(event.target.result as ArrayBuffer)
-                    .then((buffer) => {
-                        this.paused = false;
-                        this.fileObservable$.fire({ title: file.name, buffer });
-                    })
-                    .catch((err) => console.error('Could not load mp3 file', err));
-            }
-        }
-    }
-
     makeConnection(sourceNode: AudioNode) {
         if (!this.mainGain) {
             this.useAudioContext();

@@ -144,12 +144,14 @@ export function circleSpikeFormation(
     spectrum.subarray(values.length).set(values.reverse());
 
     const averageBass = spectrum
-        .subarray(options.waveCounts)
-        .reduce((prev, curr) => prev + curr, 0) / options.waveCounts;
+        .subarray(0, 2 * options.waveCounts)
+        .reduce((prev, curr) => prev + curr, 0) / (2 * options.waveCounts);
     
-    let angle = Complex.vec((options.height + utility.linearToPower(averageBass, 2, 256, 1.5)) / 4, theta);
-    let change = Complex.unit(anglePerBar);
-    let unitAng = Complex.unit(theta);
+    const radius = Math.min(options.width, options.height) / 4;
+    let angle = Complex.vec(radius + utility.linearToPower(averageBass, 2, 256, 1), theta),
+        change = Complex.unit(anglePerBar),
+        unitAng = Complex.unit(theta);
+
     canvasContext.lineWidth = 3;
 
     for (const y of spectrum) {

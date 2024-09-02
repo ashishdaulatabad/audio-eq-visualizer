@@ -65,7 +65,6 @@ export class WindowView {
     fps: HTMLElement;
     totalTimer: number = 0;
     seekbarLength: number = 0;
-    audioContextTimer: number = 0;
     offsetTimer: number = 0;
     lineType: string = 'Normal';
     prevTime: number | null = null;
@@ -127,14 +126,14 @@ export class WindowView {
             .get();
     }
 
-    selectMediaFile(event: MouseEvent) {
+    selectMediaFile(_: MouseEvent) {
         const input = el('input')
             .attr('type', 'file')
             .attr('accept', 'audio/*')
             .get();
 
         input.onchange = (event: any) => {
-            [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(event.target.files[0], 0, { playbackRate: 1 })
+            [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(event.target.files[0], { playbackRate: 1 })
             const fileSplit = event.target.files[0].name.split('.');
             this.audioService.setPaused(false);
             fileSplit.pop();
@@ -179,7 +178,6 @@ export class WindowView {
 
     setSourceNode(
         file: File | HTMLAudioElement,
-        startAt: number | null = null,
         options?: {
             playbackRate: number
         }
@@ -190,18 +188,14 @@ export class WindowView {
 
         let sourceBuffer: HTMLAudioElement;
         if (file instanceof File) {
-            sourceBuffer = new Audio(URL.createObjectURL(file))
-
-            sourceBuffer.onloadedmetadata = () => {
-                this.setDurationAndTimeDetails(sourceBuffer);
-            }
+            sourceBuffer = new Audio(URL.createObjectURL(file));
+            sourceBuffer.onloadedmetadata = () => this.totalTimer = sourceBuffer.duration;
         } else {
             sourceBuffer = file;
         }
+
         const bufferSourceNode = this.audioService.useAudioContext().createMediaElementSource(sourceBuffer);
-
         this.audioService.makeConnection(bufferSourceNode);
-
         this.offsetTimer = 0;
         bufferSourceNode.mediaElement.play();
 
@@ -211,11 +205,6 @@ export class WindowView {
 
         return [sourceBuffer, bufferSourceNode];
     }
-
-    setDurationAndTimeDetails(sourceBuffer: HTMLAudioElement) {
-        this.totalTimer = sourceBuffer.duration;
-        this.audioContextTimer = this.audioService.useAudioContext().currentTime;
-    } 
 
     onPlayerPausedOrResumed() {
         if (this.audioService.paused) {
@@ -306,17 +295,14 @@ export class WindowView {
     }
 
     static constructTitle(titleName: string) {
-        const title = el('span')
+        return el('span')
             .mcls('text-[18px]', 'font-serif', 'text-gray-100', 'block', 'items-center', 'flex')
-            .inner([
+            .inners(
                 el('span')
                     .mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold')
                     .innerText(titleName),
                 el('button').mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-300', 'border-[0]', 'ml-4', 'self-end')
-            ])
-            .get();
-
-        return title;
+            ).get();
     }
 
     moveSeekbarClick(evt: MouseEvent) {

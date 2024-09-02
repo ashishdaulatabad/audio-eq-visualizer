@@ -23,7 +23,7 @@ export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): Ba
         angleInit: 0,
         lineType: 'Default',
         radius: 200,
-        circleBarCount: 20,
+        circleBarCount: 25,
         bandRanges: [
             [20, 260],
             [260, 500],
@@ -58,10 +58,11 @@ export function barCircleFormation(
 
     let theta = options.angleInit;
 
+    const radius = Math.min(options.width, options.height) / 4;
     const change = Complex.unit(anglePerBar);
-    const arcLength = options.radius * anglePerBar;
+    const arcLength = radius * anglePerBar;
     let unitAng = Complex.unit(theta);
-    let angle = Complex.vec(options.radius, theta);
+    let angle = Complex.vec(radius, theta);
 
     canvasContext.lineWidth = arcLength - arcLength / 10;
     canvasContext.lineCap = 'round';
