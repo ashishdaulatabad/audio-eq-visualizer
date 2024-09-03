@@ -58,9 +58,7 @@ export class WindowView {
     frequencyIncr = 0;
     // Font
     fontSize = 30;
-    eqOptionDOM: HTMLElement;
-    button: HTMLElement;
-    seekbarDOM: HTMLElement;
+    // button: HTMLElement;
     seekBarThumb: HTMLElement;
     fps: HTMLElement;
     totalTimer: number = 0;
@@ -74,16 +72,15 @@ export class WindowView {
         private audioService: GlobalAudioService,
         private subscriber: Subscriber,
     ) {
-        [this.seekBarThumb, this.seekbarDOM] = this.constructSeekbar();
+        const [seekbarThumb, seekbarDOM] = this.constructSeekbar();
+        this.seekBarThumb = seekbarThumb;
         const { canvas, canvasContext } = this.buildCanvas();
         this.canvas = canvas;
         this.canvasContext = canvasContext;
 
         this.resetCanvas(this.canvasContext);
         this.fps = this.initializeFpsCounter();
-        this.eqOptionDOM = this.buildOptions();
-        this.button = this.createAudioPermissionButton();
-        this.mainDOM = this.initializeAudio(this.canvas, this.seekbarDOM, this.fps);
+        this.mainDOM = this.initializeAudio(this.canvas, seekbarDOM, this.fps);
 
         this.canvasAction.draw.push({
             drawKind: 'other',
@@ -99,14 +96,11 @@ export class WindowView {
 
         this.subscriber.subscribeToEvent('palette', (data: [string, string]) => {
             [this.backColor, this.textColor] = data;
-            this.canvasAction.draw
-            this.canvasAction.draw = this.canvasAction.draw.map((value: any) => {
-                return {
-                    ...value,
-                    backColor: this.backColor,
-                    textColor: this.textColor,
-                }
-            });
+            this.canvasAction.draw = this.canvasAction.draw.map((value: any) => ({
+                ...value,
+                backColor: this.backColor,
+                textColor: this.textColor,
+            }));
             this.resetCanvas(this.canvasContext);
         });
     }
@@ -168,10 +162,10 @@ export class WindowView {
 
     getAllAttachableViews(): HTMLElement[] {
         return [
-            this.eqOptionDOM,
+            this.buildOptions(),
             this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
             this.setSliderContainer('Speed Factor', this.setSlider('speed')),
-            this.button,
+            this.createAudioPermissionButton(),
             this.createFileSelectionButton()
         ];
     }
@@ -196,6 +190,7 @@ export class WindowView {
 
         const bufferSourceNode = this.audioService.useAudioContext().createMediaElementSource(sourceBuffer);
         this.audioService.makeConnection(bufferSourceNode);
+
         this.offsetTimer = 0;
         bufferSourceNode.mediaElement.play();
 
@@ -330,7 +325,6 @@ export class WindowView {
             .mcls('seekbar', 'absolute', 'min-h-12', 'rounded-[24px]', 'bg-gray-700/40', 'flex', 'align-center')
             .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg')
             .styleAttr({
-                width: this.seekbarLength + 'px',
                 bottom: '50px',
                 left: '50px',
             })
@@ -490,7 +484,6 @@ export class WindowView {
 
         this.seekbarLength = this.width - 100;
         resizeBuffer(this.channelData, this.width, this.height);
-        el(this.seekbarDOM).styleAttr({ width: this.width - 100 + 'px' });
 
         this.canvasAction.draw.forEach(value => {
             value.width = this.width;
