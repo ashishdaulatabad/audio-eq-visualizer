@@ -5,8 +5,8 @@ export default {
   theme: {
     extend: {},
     fontFamily: {
-      sans: ['Helvetica Neue', 'Fira Sans'],
-      mono: ['Iosevka Nerd Font', 'Roboto Mono', 'ZedMono Nerd Font']
+      sans: ['Helvetica Neue', 'Arial', 'sans-serif'],
+      mono: ['Iosevka Nerd Font', 'Roboto Mono', 'ZedMono Nerd Font', 'SF Mono', 'monospace']
     }
   },
   plugins: [],
