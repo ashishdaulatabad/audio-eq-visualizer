@@ -9,6 +9,40 @@ import { createOptionsForWaveCircle } from '../service/wavecircle.service';
 import { createOptionsForWave } from '../service/wave.service';
 import { ChromeAbbr, createBufferForChromaticAbberation, resizeBuffer } from '../service/chrome.service';
 
+function createPanelSection(...children: HTMLElement[]) {
+    return el('div')
+        .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'transition-all', 'duration-200', 'ease-in-out', 'w-avail', 'top-10', 'right-[300px]', 'rounded-[3px]', 'p-2', 'pr-0', 'text-center')
+        .mcls('max-h-72', 'overflow-y-scroll', 'scrollbar-thumb', 'flex', 'flex-col', 'shadow-md')
+        .inners(...children)
+        .get();
+}
+
+function constructTitle(titleName: string) {
+    return el('span')
+        .mcls('text-[18px]', 'font-serif', 'text-gray-100', 'block', 'items-center', 'flex')
+        .inners(
+            el('span')
+                .mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold')
+                .innerText(titleName),
+            el('button').mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-300', 'border-[0]', 'ml-4', 'self-end')
+        ).get();
+}
+
+function createInputTuple(
+    inputType: string,
+    label: string,
+    evtCall: (_: InputEvent) => void
+) {
+    return [
+        el('input')
+            .inputType(inputType)
+            .attr('name', 'toggle-spiral')
+            .evt('change', evtCall)
+            .get(),
+        el('label').attr('for', 'toggle-spiral').mcls('text-gray-200', 'p-2').innerHtml(label).get(),
+    ]
+}
+
 export class WindowView {
     fileName: string | null = null;
     backColor: string = 'rgb(10 12 14)';
@@ -160,11 +194,37 @@ export class WindowView {
             .get();
     }
 
+    onSpiralToggle(event: InputEvent) {
+        const particleConfiguration = this.canvasAction.draw.find(({ type }) => type && type === 'Particle');
+
+        if (particleConfiguration) {
+            particleConfiguration.isSpiral = (event.target as HTMLInputElement).checked;
+        }
+    }
+
+    createCheckBox() {
+        const title = constructTitle('Modifiers');
+        const panel = createPanelSection(
+            title, 
+             el('div')
+                .inners(
+                    ...createInputTuple('checkbox', 'Toggle Spiral', this.onSpiralToggle.bind(this)),
+                    ...createInputTuple('checkbox', 'Toggle Particle Effect', this.onSpiralToggle.bind(this))
+                ).get()
+        );
+
+        const view = panel.children[2] as HTMLElement;
+        const button = title.children[1] as HTMLElement;
+        el(button).evt('click', (_) => el(view).tcls('collapsed'));
+        return panel;
+    }
+
     getAllAttachableViews(): HTMLElement[] {
         return [
             this.buildOptions(),
             this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
             this.setSliderContainer('Speed Factor', this.setSlider('speed')),
+            this.createCheckBox(),
             this.createAudioPermissionButton(),
             this.createFileSelectionButton()
         ];
@@ -210,7 +270,7 @@ export class WindowView {
     }
 
     setSliderContainer(sliderTitle: string, ...content: HTMLElement[]) {
-        const title = WindowView.constructTitle(sliderTitle);
+        const title = constructTitle(sliderTitle);
         const viewDom = el('div')
             .mcls('bg-gray-600/50', 'rounded-sm', 'p-2', 'text-gray-200')
             .inner([
@@ -289,17 +349,6 @@ export class WindowView {
             .get<HTMLDivElement>();
     }
 
-    static constructTitle(titleName: string) {
-        return el('span')
-            .mcls('text-[18px]', 'font-serif', 'text-gray-100', 'block', 'items-center', 'flex')
-            .inners(
-                el('span')
-                    .mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold')
-                    .innerText(titleName),
-                el('button').mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-300', 'border-[0]', 'ml-4', 'self-end')
-            ).get();
-    }
-
     moveSeekbarClick(evt: MouseEvent) {
         const time = (evt.offsetX / this.seekbarLength) * this.totalTimer;
         this.sourceBuffer.currentTime = time;
@@ -365,7 +414,7 @@ export class WindowView {
         return el('div')
             .mcls('options', 'flex', 'flex-col')
             .inner(
-                ['Bar', 'Bar Mirrored', 'Bar Circle', /*'Bar Circle Mirrored',*/ 'Wave Circle', 'Circle Spike', 'Wave'].map((type) =>
+                ['Bar', 'Bar Mirrored', 'Bar Circle', 'Wave Circle', 'Circle Spike', 'Wave'].map((type) =>
                     el('button')
                         .mcls('border-0', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'rounded-[3px]')
                         .mcls('text-gray-100', 'p-2')
@@ -379,12 +428,8 @@ export class WindowView {
     }
 
     buildOptions() {
-        const styleDom = WindowView.constructTitle('Visualizer Type');
-        const eqVisualizerOptions = el('div')
-            .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'transition-all', 'duration-200', 'ease-in-out', 'w-avail', 'top-10', 'right-[300px]', 'rounded-[3px]', 'p-2', 'pr-0', 'text-center')
-            .mcls('max-h-72', 'overflow-y-scroll', 'scrollbar-thumb', 'flex', 'flex-col', 'shadow-md')
-            .inner([styleDom, this.constructOptions()])
-            .get();
+        const styleDom = constructTitle('Visualizer Type');
+        const eqVisualizerOptions = createPanelSection(styleDom, this.constructOptions());
 
         const list = eqVisualizerOptions.children[1] as HTMLElement;
         const button = styleDom.children[1] as HTMLElement;
@@ -519,8 +564,21 @@ export class WindowView {
     requestAnimation(): number {
         this.setFps();
         this.resetCanvas(this.canvasContext);
-        this.setTitle(this.canvasContext);
-        applyTransformation(this.canvasContext, this.canvasAction.draw);
+        this.resetCanvas(this.offContext)
+        this.setTitle(this.offContext);
+        applyTransformation(this.offContext, this.canvasAction.draw);
+        // chromaticAbberationTransform(this.offContext, {
+        //     width: this.width,
+        //     height: this.height,
+        //     bxDrift: 1,
+        //     byDrift: 1,
+        //     rxDrift: 2,
+        //     ryDrift: -1,
+        //     gxDrift: 0,
+        //     gyDrift: 2,
+        //     channelData: this.channelData
+        // });
+        this.canvasContext.drawImage(this.offscreenCanvas, 0, 0);
         this.canvasContext.stroke();
         this.animationFrame = requestAnimationFrame(this.requestAnimation.bind(this));
         return this.animationFrame;

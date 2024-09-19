@@ -2,7 +2,7 @@ import { Complex } from "../common/complex";
 import utility from "../common/utility";
 
 export function applyTransformation(
-    canvasContext: CanvasRenderingContext2D,
+    canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     optionsArray: any[],
 ) {
     optionsArray.forEach((option) => option.fn(canvasContext, option));
@@ -19,9 +19,12 @@ export function complement(rgb: string) {
 }
 
 export type ParticleOptions = {
+    type: 'Particle',
     timeStamp: number,
     length: number,
     fn: (c: CanvasRenderingContext2D, _: any) => void,
+    isSpiral: boolean,
+    checkSpiral: (event: InputEvent) => void,
     buffer: {
         x: Float32Array,
         y: Float32Array,
@@ -42,9 +45,12 @@ export function createRandomParticleSeeding(
     yAccelScale: number,
 ): ParticleOptions {
     return {
+        type: 'Particle',
         timeStamp: performance.now(),
         length,
         fn: applyParticleTransformation,
+        isSpiral: false,
+        checkSpiral: function (event: InputEvent) { this.isSpiral = (event.target as HTMLInputElement).checked },
         buffer: {
             x: new Float32Array(length).map(_ => (Math.random() * xScale)),
             y: new Float32Array(length).map(_ => (Math.random() * yScale)),
@@ -82,8 +88,13 @@ export function applyParticleTransformation(
             options.buffer.ax[index],
             options.buffer.ay[index],
         ];
-        canvasContext.fillRect(x, y, 1, 1);
-        [ax, ay] = Complex.vec(8, 2 * Math.random() * Math.PI).coord();
+        if (options.isSpiral) {
+            canvasContext.fillRect(x, y, 1 + (vx > 0 ? 1 : 0), 1 + (vx > 0 ? 1 : 0));
+            [ax, ay] = Complex.vec(8, Math.random() * Math.PI).coord();
+        } else {
+            canvasContext.fillRect(x, y, 1, 1);
+            [ax, ay] = Complex.vec(16, 2 * Math.random() * Math.PI).coord();
+        }
 
         vx += ax * timeChange;
         vx = clamp(vx, -20, 20);

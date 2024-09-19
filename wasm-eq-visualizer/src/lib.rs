@@ -78,37 +78,60 @@ pub fn apply_particle_transformation_for_canvas_2d(
     let (mut g_index, g_stride) = init(gy_drift);
     let (mut b_index, b_stride) = init(by_drift);
 
+    let total_rows = r_index / width_u;
+
+    let p = if ry_drift < length {
+        (0..total_rows).rev().for_each(|rrow| {
+            let curr_row = &clamped_data[rrow * width_u..(rrow + 1) * width_u];
+            
+        });
+    } else {
+        (0..total_rows).for_each(|rrow| {
+
+        });
+    };
+
     (0..length).for_each(|_| {
-        let (rrow, rcol) = (r_index / width_u, r_index % width_u);
+        let rrow = r_index / width_u; 
+        let rcol = r_index - rrow * width_u;
+
         let (rdrow, rdcol) = (rrow.wrapping_sub(ry_drift), rcol.wrapping_sub(rx_drift));
         if rdrow < height_u && rdcol < width_u {
-            clamped_data[(rrow * width_u + get_index(rcol, rx_drift_i)) << 2] =
-                clamped_data[(rdrow * width_u + get_index(rdcol, rx_drift_i)) << 2];
-        } else {
-            clamped_data[(rrow * width_u + get_index(rcol, rx_drift_i)) << 2] = 0;
-        }
+            let curr = (rrow * width_u + get_index(rcol, rx_drift_i)) << 2;
+            let shifted = (rdrow * width_u + get_index(rdcol, rx_drift_i)) << 2;
 
-        let (grow, gcol) = (g_index / width_u, g_index % width_u);
-        let (gdrow, gdcol) = (grow.wrapping_sub(gy_drift), gcol.wrapping_sub(gx_drift));
-        if gdrow < height_u && gdcol < width_u {
-            clamped_data[((grow * width_u + get_index(gcol, gx_drift_i)) << 2) + 1] =
-                clamped_data[((gdrow * width_u + get_index(gdcol, gx_drift_i)) << 2) + 1];
-        } else {
-            clamped_data[((grow * width_u + get_index(gcol, gx_drift_i)) << 2) + 1] = 0;
-        }
-
-        let (brow, bcol) = (b_index / width_u, b_index % width_u);
-        let (bdrow, bdcol) = (brow.wrapping_sub(by_drift), bcol.wrapping_sub(bx_drift));
-        if bdrow < height_u && bdcol < width_u {
-            clamped_data[((brow * width_u + get_index(bcol, bx_drift_i)) << 2) + 2] =
-                clamped_data[((bdrow * width_u + get_index(bdcol, bx_drift_i)) << 2) + 2];
-        } else {
-            clamped_data[((brow * width_u + get_index(bcol, bx_drift_i)) << 2) + 2] = 0;
+            if clamped_data[curr] != clamped_data[shifted] {
+                clamped_data[curr] = clamped_data[shifted];
+            }
         }
         r_index = r_index.wrapping_add(r_stride);
-        g_index = g_index.wrapping_add(g_stride);
-        b_index = b_index.wrapping_add(b_stride);
     });
+
+    // (0..length).for_each(|_| {
+    //     let grow = g_index / width_u; 
+    //     let gcol = g_index - grow * width_u;
+    //     let (gdrow, gdcol) = (grow.wrapping_sub(gy_drift), gcol.wrapping_sub(gx_drift));
+    //     if gdrow < height_u && gdcol < width_u {
+    //         clamped_data[((grow * width_u + get_index(gcol, gx_drift_i)) << 2) + 1] =
+    //             clamped_data[((gdrow * width_u + get_index(gdcol, gx_drift_i)) << 2) + 1];
+    //     } else {
+    //         clamped_data[((grow * width_u + get_index(gcol, gx_drift_i)) << 2) + 1] = 0;
+    //     }
+    //     g_index = g_index.wrapping_add(g_stride);
+    // });
+    //
+    // (0..length).for_each(|_| {
+    //     let brow = b_index / width_u; 
+    //     let bcol = b_index - brow * width_u;
+    //     let (bdrow, bdcol) = (brow.wrapping_sub(by_drift), bcol.wrapping_sub(bx_drift));
+    //     if bdrow < height_u && bdcol < width_u {
+    //         clamped_data[((brow * width_u + get_index(bcol, bx_drift_i)) << 2) + 2] =
+    //             clamped_data[((bdrow * width_u + get_index(bdcol, bx_drift_i)) << 2) + 2];
+    //     } else {
+    //         clamped_data[((brow * width_u + get_index(bcol, bx_drift_i)) << 2) + 2] = 0;
+    //     }
+    //     b_index = b_index.wrapping_add(b_stride);
+    // });
 
     let new_image = ImageData::new_with_u8_clamped_array(Clamped(&clamped_data.0), width as u32)?;
 
