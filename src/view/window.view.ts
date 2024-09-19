@@ -34,12 +34,11 @@ function createInputTuple(
     evtCall: (_: InputEvent) => void
 ) {
     return [
-        el('input')
-            .inputType(inputType)
-            .attr('name', 'toggle-spiral')
-            .evt('change', evtCall)
-            .get(),
-        el('label').attr('for', 'toggle-spiral').mcls('text-gray-200', 'p-2').innerHtml(label).get(),
+        el('div')
+            .inners(
+                el('input').inputType(inputType).attr('name', 'toggle-spiral').evt('change', evtCall),
+                el('label').attr('for', 'toggle-spiral').mcls('text-gray-200', 'p-2').innerHtml(label).get(),
+            )
     ]
 }
 
@@ -209,7 +208,6 @@ export class WindowView {
              el('div')
                 .inners(
                     ...createInputTuple('checkbox', 'Toggle Spiral', this.onSpiralToggle.bind(this)),
-                    ...createInputTuple('checkbox', 'Toggle Particle Effect', this.onSpiralToggle.bind(this))
                 ).get()
         );
 
