@@ -224,7 +224,7 @@ export class WindowView {
             this.buildOptions(),
             this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
             this.setSliderContainer('Speed Factor', this.setSlider('speed')),
-            this.createCheckBox(),
+            // this.createCheckBox(),
             this.createAudioPermissionButton(),
             this.createFileSelectionButton()
         ];
