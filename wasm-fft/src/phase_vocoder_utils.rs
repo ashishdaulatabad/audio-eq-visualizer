@@ -3,7 +3,8 @@ use wasm_bindgen::prelude::*;
 /// Find all the peaks performed during FFT of
 /// `complex_array`
 fn find_peaks(complex_array: &[f32]) -> Vec<isize> {
-    let magnitudes = complex_array.chunks(2)
+    let magnitudes = complex_array
+        .chunks(2)
         .map(|c| c[0] * c[0] + c[1] * c[1])
         .collect::<Vec<f32>>();
 
@@ -11,8 +12,10 @@ fn find_peaks(complex_array: &[f32]) -> Vec<isize> {
         .windows(5)
         .enumerate()
         .filter(|(_, window)| {
-            window[2] > window[1] && window[2] > window[0] &&
-                window[2] > window[3] && window[2] > window[4]
+            window[2] > window[1]
+                && window[2] > window[0]
+                && window[2] > window[3]
+                && window[2] > window[4]
         })
         .map(|(index, _)| index as isize + 2)
         .collect()
@@ -20,11 +23,10 @@ fn find_peaks(complex_array: &[f32]) -> Vec<isize> {
 
 /// Apply hann window
 fn apply_hann_window(audio_content: &mut [f32], hann_buffer: &[f32]) {
-    audio_content.iter_mut()
+    audio_content
+        .iter_mut()
         .zip(hann_buffer.iter())
-        .for_each(|(ac, hb)| {
-            *ac *= *hb;
-        })
+        .for_each(|(ac, hb)| *ac *= *hb)
 }
 
 #[wasm_bindgen]
@@ -33,15 +35,15 @@ pub fn process_ola(
     hann_buffer: &[f32],
     lookup_table: &[f32],
     pitch_factor: f32,
-    time_cursor: f32
+    time_cursor: f32,
 ) -> Vec<f32> {
     apply_hann_window(channel, hann_buffer);
-    
+
     let fft_complex_buffer = wasm_fft::fft(channel, lookup_table);
 
     let peaks = find_peaks(&fft_complex_buffer);
-    let len = peaks.len();            
-    
+    let len = peaks.len();
+
     let shifted_fft_complex = shift_peaks(
         channel.len(),
         &fft_complex_buffer,
@@ -49,7 +51,7 @@ pub fn process_ola(
         (channel.len() >> 1) as isize,
         len as isize,
         pitch_factor,
-        time_cursor
+        time_cursor,
     );
 
     let mut output = wasm_fft::ifft(&shifted_fft_complex, lookup_table);

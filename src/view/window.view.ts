@@ -159,16 +159,18 @@ export class WindowView {
             .attr('accept', 'audio/*')
             .get();
 
-        input.onchange = (event: any) => {
-            [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(event.target.files[0], { playbackRate: 1 })
-            const fileSplit = event.target.files[0].name.split('.');
-            this.audioService.setPaused(false);
-            fileSplit.pop();
-            this.fileName = fileSplit.join('.');
-            this.timer = this.audioService.useAudioContext().currentTime;
-            this.run();
-        }
+        input.onchange = (event: any) => this.setSourceFile(event.target.files[0]);
         input.click();
+    }
+
+    setSourceFile(file: File) {
+        [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(file, { playbackRate: 1 })
+        const fileSplit = file.name.split('.');
+        this.audioService.setPaused(false);
+        fileSplit.pop();
+        this.fileName = fileSplit.join('.');
+        this.timer = this.audioService.useAudioContext().currentTime;
+        this.run();
     }
     
     createFileSelectionButton() {

@@ -42,14 +42,14 @@ window.onload = async () => {
 
         if (event.dataTransfer?.files) {
             const file = event.dataTransfer.files[0];
-            globalAudioService.setAudioBuffer(file);
+            window2.setSourceFile(file);
         }
     };
     const onDragOver = (event: DragEvent) => {
         event.preventDefault();
     };
 
-    const setResize = (evt: Event) => {
+    const setResize = (_: Event) => {
         window2.setResize();
     }
 
