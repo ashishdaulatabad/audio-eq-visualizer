@@ -1,6 +1,6 @@
 # Audio Eq Visualizer
 
-Note: Before installing, check on how to build Rust code [here.](./wasm-eq/README.md)
+Note: Before running, check on how to build Rust code [here.](./wasm-eq/README.md)
 
 To install dependencies:
 
@@ -11,7 +11,7 @@ npm i
 To run:
 
 ```bash
-npm watch
+npm run watch
 ```
 
 # Credits
