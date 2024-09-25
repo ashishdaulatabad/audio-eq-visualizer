@@ -1,4 +1,5 @@
 import utility from "../common/utility";
+import { withDocumentDim, Dim } from "./util.service";
 
 const color = (magnitude: number) => {
     if (magnitude < 200) return 'rgb(135 255 66)';
@@ -15,11 +16,11 @@ export type BarOptions = {
     volumeScaling: number,
     barFactor: number,
     mirrored?: boolean,
-    fn: (c: CanvasRenderingContext2D, _: any) => void
-}
+    fn: (c: CanvasRenderingContext2D, _: any) => void,
+} & Dim
 
 export function createOptionsForBar(frequencyIncr: number, mirrored?: boolean): BarOptions {
-    return {
+    return withDocumentDim<BarOptions>({
         type: 'Bar',
         bandBarCount: 16,
         lineType: 'Normal',
@@ -35,7 +36,7 @@ export function createOptionsForBar(frequencyIncr: number, mirrored?: boolean): 
         barFactor: 3.0,
         mirrored,
         fn: barFormation
-    }
+    });
 }
 
 function drawRetroForBar(

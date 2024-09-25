@@ -1,20 +1,20 @@
+import { Dim, withDocumentDim } from "./util.service";
+
 export type WaveOptions = {
     type: 'Wave',
     fn: (c: CanvasRenderingContext2D, _: any) => void
-}
+} & Dim;
 
 export function createOptionsForWave(): WaveOptions {
-    return {
+    return withDocumentDim({
         type: 'Wave',
-        fn: waveFormation
-    };
+        fn: waveFormation,
+    });
 }
 
 export function waveFormation(
     canvasContext: CanvasRenderingContext2D,
     options: WaveOptions & {
-        width: number,
-        height: number,
         analyser: AnalyserNode,
         buffer: Uint8Array,
     }

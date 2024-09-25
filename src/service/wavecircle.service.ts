@@ -1,5 +1,6 @@
 import { Complex } from "../common/complex";
 import utility from "../common/utility";
+import { withDocumentDim, Dim } from "./util.service";
 
 export type WaveCircleOptions = {
     type: 'Wave Circle',
@@ -14,10 +15,10 @@ export type WaveCircleOptions = {
     barCircleFactor: number,
     timeStamp: number,
     angularVelocity: number,
-}
+} & Dim
 
 export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?: boolean): WaveCircleOptions {
-    return {
+    return withDocumentDim({
         type: 'Wave Circle',
         angleInit: 0,
         lineType: 'Normal',
@@ -36,16 +37,14 @@ export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?
         barCircleFactor: isCircleSpike ? 1.75 : 2.25,
         timeStamp: performance.now(),
         angularVelocity: 2 * Math.PI / 100,
-    }
+    });
 }
 
 export function waveCircleFormation(
     canvasContext: CanvasRenderingContext2D,
     options: WaveCircleOptions & {
         buffer: Float32Array,
-        width: number,
         analyser: AnalyserNode,
-        height: number,
     }
 ) {
     options.analyser.getFloatFrequencyData(options.buffer);

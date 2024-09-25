@@ -1,5 +1,6 @@
 import { Complex } from "../common/complex";
 import utility from "../common/utility";
+import { Dim, withDocumentDim } from "./util.service";
 
 export function applyTransformation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -33,7 +34,7 @@ export type ParticleOptions = {
         ax: Float32Array,
         ay: Float32Array
     };
-}
+} & Dim
 
 export function createRandomParticleSeeding(
     length: number,
@@ -44,13 +45,15 @@ export function createRandomParticleSeeding(
     xAccelScale: number,
     yAccelScale: number,
 ): ParticleOptions {
-    return {
+    return withDocumentDim({
         type: 'Particle',
         timeStamp: performance.now(),
         length,
         fn: applyParticleTransformation,
         isSpiral: false,
-        checkSpiral: function (event: InputEvent) { this.isSpiral = (event.target as HTMLInputElement).checked },
+        checkSpiral: function (event: InputEvent) {
+            this.isSpiral = (event.target as HTMLInputElement).checked;
+        },
         buffer: {
             x: new Float32Array(length).map(_ => (Math.random() * xScale)),
             y: new Float32Array(length).map(_ => (Math.random() * yScale)),
@@ -58,8 +61,8 @@ export function createRandomParticleSeeding(
             vy: new Float32Array(length).map(_ => (Math.random() * yVelScale)),
             ax: new Float32Array(length).map(_ => (Math.random() * xAccelScale)),
             ay: new Float32Array(length).map(_ => (Math.random() * yAccelScale)),
-        }
-    };
+        },
+    });
 }
 
 const clamp = (value: number, min: number, max: number) => (
@@ -70,8 +73,6 @@ export function applyParticleTransformation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     options: ParticleOptions & {
         textColor: string,
-        width: number,
-        height: number
     }
 ) {
     canvasContext.fillStyle = options.textColor;

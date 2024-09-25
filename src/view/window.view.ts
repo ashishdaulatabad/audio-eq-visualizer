@@ -115,13 +115,10 @@ export class WindowView {
         this.fps = this.initializeFpsCounter();
         this.mainDOM = this.initializeAudio(this.canvas, seekbarDOM, this.fps);
 
-        this.canvasAction.draw.push({
-            drawKind: 'other',
-            textColor: this.textColor,
-            width: this.width,
-            height: this.height,
-            ...createRandomParticleSeeding(256, this.width, this.height, 6, 6, 2, 2)
-        });
+        this.canvasAction.draw.push(Object.assign(
+            createRandomParticleSeeding(256, this.width, this.height, 6, 6, 2, 2),
+            { drawKind: 'other', textColor: this.textColor }
+        ));
 
         this.channelData = createBufferForChromaticAbberation(this.width, this.height);
         this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
@@ -524,22 +521,23 @@ export class WindowView {
     }
 
     setResize() {
-        this.width = document.documentElement.clientWidth;
-        this.height = document.documentElement.clientHeight;
+        const width = document.documentElement.clientWidth;
+        const height = document.documentElement.clientHeight;
 
-        this.seekbarLength = this.width - 100;
-        resizeBuffer(this.channelData, this.width, this.height);
-
-        this.canvasAction.draw.forEach(value => {
-            value.width = this.width;
-            value.height = this.height;
-        });
+        this.seekbarLength = width - 100;
+         
+        this.canvasAction.draw.forEach(config => config.resize(width, height));
 
         el(this.canvas)
             .mcls('wave')
-            .attr('width', this.width.toString())
-            .attr('height', this.height.toString())
+            .attr('width', width.toString())
+            .attr('height', height.toString())
             .get<HTMLCanvasElement>();
+
+        this.offscreenCanvas.width = width; 
+        this.offscreenCanvas.height = height;
+        this.width = width;
+        this.height = height;
 
         this.resetCanvas(this.canvasContext);
     }
@@ -601,29 +599,27 @@ export class WindowView {
             case 'Bar':
             case 'Bar Mirrored': {
                 this.analyser = this.initializeAnalyzerBar();
-                const value = {
-                    ...createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'),
+                const value = Object.assign(createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'), {
                     isReflective: true,
                     drawKind: 'eq',
                     analyser: this.analyser,
                     buffer: this.frequencyBuffer,
                     width: this.width,
                     height: this.height,
-                }
+                });
                 addOrInsert(this.canvasAction, value);
                 break;
             }
 
             case 'Wave': {
                 this.analyser = this.initializeAnalyzerWave();
-                const value = {
-                    ...createOptionsForWave(),
+                const value = Object.assign(createOptionsForWave(), {
                     drawKind: 'eq',
                     analyser: this.analyser,
                     buffer: this.buffer,
                     width: this.width,
                     height: this.height,
-                }
+                });
                 addOrInsert(this.canvasAction, value);
                 break;
             }
@@ -631,14 +627,11 @@ export class WindowView {
             case 'Wave Circle':
             case 'Circle Spike': {
                 this.analyser = this.initializeAnalyzerBar();
-                const value = {
-                    ...createOptionsForWaveCircle(this.frequencyIncr, this.currentMode === 'Circle Spike'),
-                    drawKind: 'eq',
-                    analyser: this.analyser,
-                    buffer: this.frequencyBuffer,
-                    width: this.width,
-                    height: this.height,
-                }
+                const value = Object.assign(createOptionsForWaveCircle(this.frequencyIncr, this.currentMode === 'Circle Spike'), {
+                        drawKind: 'eq',
+                        analyser: this.analyser,
+                        buffer: this.frequencyBuffer,
+                    });
                 addOrInsert(this.canvasAction, value);
                 break;
             }
@@ -646,14 +639,11 @@ export class WindowView {
             case 'Bar Circle':
             case 'Bar Circle Mirrored': {
                 this.analyser = this.initializeAnalyzerBar();
-                const value = {
-                    ...createBarCircleEq(this.frequencyIncr, this.currentMode === 'Bar Circle Mirrored'),
+                const value = Object.assign(createBarCircleEq(this.frequencyIncr, this.currentMode === 'Bar Circle Mirrored'), {
                     drawKind: 'eq',
                     analyser: this.analyser,
                     buffer: this.frequencyBuffer,
-                    width: this.width,
-                    height: this.height,
-                }
+                })
                 addOrInsert(this.canvasAction, value);
                 break;
             }

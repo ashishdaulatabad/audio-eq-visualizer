@@ -1,4 +1,5 @@
 import init, * as wasm from "wasm-eq-visualizer";
+import { withDocumentDim, Dim } from "./util.service";
 
 export type ChromeAbbr = {
     offCanvas: OffscreenCanvas,
@@ -8,7 +9,7 @@ export type ChromeAbbr = {
     r: ImageData,
     g: ImageData,
     b: ImageData,
-}
+} & Dim;
 
 init({ module_or_path: './wasm_eq_visualizer_bg.wasm' });
 
@@ -36,7 +37,7 @@ export function createBufferForChromaticAbberation(
     const outCanvas = new OffscreenCanvas(width, height);
     const outContext = outCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
 
-    return {
+    return withDocumentDim({
         offCanvas,
         context,
         outCanvas,
@@ -44,7 +45,13 @@ export function createBufferForChromaticAbberation(
         r: context.createImageData(width, height),
         g: context.createImageData(width, height),
         b: context.createImageData(width, height),
-    }
+    }, (currConfig: ChromeAbbr & Dim) => {
+        currConfig.offCanvas.width = currConfig.width;
+        currConfig.offCanvas.height = currConfig.height;
+
+        currConfig.outCanvas.width = currConfig.width;
+        currConfig.outCanvas.height = currConfig.height;
+    });
 }
 
 export function chromaticAbberationTransform(

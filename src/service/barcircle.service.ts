@@ -1,7 +1,8 @@
 import { Complex } from "../common/complex";
 import utility from "../common/utility";
+import { withDocumentDim, Dim } from "./util.service";
 
-export interface BarCircleOptions {
+export type BarCircleOptions = {
     type: 'BarCircle',
     circleBarCount: number,
     lineType: string,
@@ -15,10 +16,10 @@ export interface BarCircleOptions {
     timeStamp: number,
     mirrored?: boolean,
     angularVelocity: number,
-}
+} & Dim
 
 export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): BarCircleOptions {
-    return {
+    return withDocumentDim({
         type: 'BarCircle',
         angleInit: 0,
         lineType: 'Default',
@@ -38,7 +39,7 @@ export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): Ba
         timeStamp: performance.now(),
         mirrored,
         angularVelocity: 2 * Math.PI / 100,
-    }
+    });
 }
 
 export function barCircleFormation(
