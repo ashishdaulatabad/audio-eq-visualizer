@@ -8,18 +8,19 @@
     ],
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
-        "start": "npm run",
+        "start": "bun run",
         "tailwindcss": "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch",
         "tailwindcss_build": "npx tailwindcss -i ./styles.css -o ./dist/output.css --minify",
         "watch": "npm-run-all --parallel build-ts tailwindcss cp-wasm-eq cp-wasm-fft",
-        "runall": "npm-run-all --parallel bundle tailwindcss_build cp-wasm-eq cp-wasm-fft cp-html",
+        "buildall": "npm-run-all --parallel bundle tailwindcss_build cp-wasm-eq cp-wasm-fft cp-html",
         "watch_no_wasm": "npm-run-all --parallel build-ts tailwindcss",
-        "build": "npm run clean && npm run build_wasm_visualizer && npm run build_wasm_fft && npm run runall",
+        "run": "bun run clean && bun run build_wasm_visualizer && bun run build_wasm_fft && bun run watch",
+        "build": "bun run clean && bun run build_wasm_visualizer && bun run build_wasm_fft && bun run buildall",
         "build_wasm_visualizer": "cd ./wasm-eq-visualizer && $HOME/.cargo/bin/wasm-pack build --target web",
         "build_wasm_fft": "cd ./wasm-fft && $HOME/.cargo/bin/wasm-pack build --target web",
         "cp-wasm-eq": "cp ./wasm-eq-visualizer/pkg/wasm_eq_visualizer_bg.wasm ./dist",
         "cp-wasm-fft": "cp ./wasm-fft/pkg/wasm_fft_bg.wasm ./dist",
-        "build-ts": "./build.js",
+        "build-ts": "chmod +x ./build.js && ./build.js",
         "clean": "rm -rf ./dist/*",
         "cp-html": "cp ./index.html ./dist",
         "bundle": "chmod +x run.js && ./run.js"
@@ -27,13 +28,13 @@
     "devDependencies": {
         "esbuild": "^0.21.4",
         "esbuild-plugin-copy": "^2.1.1",
+        "npm-run-all": "^4.1.5",
         "tailwindcss": "^3.4.3"
     },
     "peerDependencies": {
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "npm-run-all": "^4.1.5",
         "wasm-eq-visualizer": "file:./wasm-eq-visualizer/pkg/",
         "wasm-fft": "file:./wasm-fft/pkg/"
     }
