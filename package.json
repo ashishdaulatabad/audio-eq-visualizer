@@ -9,9 +9,9 @@
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "bun run",
-        "tailwindcss": "npx tailwindcss -i ./styles.css -o ./dist/output.css --watch",
+        "tailwindcss": "npx tailwindcss -i ./styles.css -o ./dev/output.css --watch",
         "tailwindcss_build": "npx tailwindcss -i ./styles.css -o ./dist/output.css --minify",
-        "watch": "npm-run-all --parallel build-ts tailwindcss cp-wasm-eq cp-wasm-fft",
+        "watch": "npm-run-all --parallel build-ts tailwindcss cp-wasm-eq-dev cp-wasm-fft-dev cp-html-dev",
         "buildall": "npm-run-all --parallel bundle tailwindcss_build cp-wasm-eq cp-wasm-fft cp-html",
         "watch_no_wasm": "npm-run-all --parallel build-ts tailwindcss",
         "run": "bun run clean && bun run build_wasm_visualizer && bun run build_wasm_fft && bun run watch",
@@ -20,10 +20,13 @@
         "build_wasm_fft": "cd ./wasm-fft && $HOME/.cargo/bin/wasm-pack build --target web",
         "cp-wasm-eq": "cp ./wasm-eq-visualizer/pkg/wasm_eq_visualizer_bg.wasm ./dist",
         "cp-wasm-fft": "cp ./wasm-fft/pkg/wasm_fft_bg.wasm ./dist",
-        "build-ts": "chmod +x ./build.js && ./build.js",
+        "cp-wasm-eq-dev": "cp ./wasm-eq-visualizer/pkg/wasm_eq_visualizer_bg.wasm ./dev",
+        "cp-wasm-fft-dev": "cp ./wasm-fft/pkg/wasm_fft_bg.wasm ./dev",
+        "build-ts": "chmod +x ./run.js && ./run.js",
         "clean": "rm -rf ./dist/*",
         "cp-html": "cp ./index.html ./dist",
-        "bundle": "chmod +x run.js && ./run.js"
+        "cp-html-dev": "cp ./index.html ./dev",
+        "bundle": "chmod +x build.js && ./build.js"
     },
     "devDependencies": {
         "esbuild": "^0.21.4",
