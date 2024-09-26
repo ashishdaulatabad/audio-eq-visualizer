@@ -7,7 +7,7 @@ import { createOptionsForBar } from '../service/bar.service';
 import { createBarCircleEq } from '../service/barcircle.service';
 import { createOptionsForWaveCircle } from '../service/wavecircle.service';
 import { createOptionsForWave } from '../service/wave.service';
-import { ChromeAbbr, createBufferForChromaticAbberation, resizeBuffer } from '../service/chrome.service';
+import { ChromeAbbr, createBufferForChromaticAbberation } from '../service/chrome.service';
 
 function createPanelSection(...children: HTMLElement[]) {
     return el('div')
@@ -61,8 +61,7 @@ export class WindowView {
     };
 
     mainDOM: HTMLDivElement;
-    // @ts-expect-error
-    buffer: Uint8Array;
+    buffer: Uint8Array = new Uint8Array(0);
     frequencyBuffer: Float32Array = new Float32Array(1);
     canvas: HTMLCanvasElement;
     offscreenCanvas: OffscreenCanvas;
@@ -70,8 +69,6 @@ export class WindowView {
     // @ts-expect-error
     analyser: AnalyserNode;
     canvasContext: CanvasRenderingContext2D;
-    // @ts-expect-error
-    webGLContext: WebGLRenderingContext;
     // Buffer Length
     bufferLength: number = 0;
     // FFT Size
@@ -131,6 +128,7 @@ export class WindowView {
                 backColor: this.backColor,
                 textColor: this.textColor,
             }));
+
             this.resetCanvas(this.canvasContext);
         });
     }
@@ -561,6 +559,9 @@ export class WindowView {
 
     requestAnimation(): number {
         this.setFps();
+        if (this.canvas.width !== document.documentElement.clientWidth || this.canvas.height !== document.documentElement.clientHeight) {
+            this.setResize();
+        }
         this.resetCanvas(this.canvasContext);
         this.resetCanvas(this.offContext)
         this.setTitle(this.offContext);

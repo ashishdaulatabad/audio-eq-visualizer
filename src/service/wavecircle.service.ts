@@ -15,10 +15,10 @@ export type WaveCircleOptions = {
     barCircleFactor: number,
     timeStamp: number,
     angularVelocity: number,
-} & Dim
+};
 
-export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?: boolean): WaveCircleOptions {
-    return withDocumentDim({
+export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?: boolean): WaveCircleOptions & Dim {
+    return withDocumentDim<WaveCircleOptions>({
         type: 'Wave Circle',
         angleInit: 0,
         lineType: 'Normal',
@@ -42,7 +42,7 @@ export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?
 
 export function waveCircleFormation(
     canvasContext: CanvasRenderingContext2D,
-    options: WaveCircleOptions & {
+    options: WaveCircleOptions & Dim & {
         buffer: Float32Array,
         analyser: AnalyserNode,
     }

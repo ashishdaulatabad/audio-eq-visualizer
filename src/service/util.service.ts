@@ -4,7 +4,10 @@ export type Dim = {
     resize: (width: number, height: number) => void,
 }
 
-export function withDocumentDim<Config extends Object>(config: Config, callback?: (_: Config) => void): Dim & Config {
+export function withDocumentDim<Config>(
+    config: Config, 
+    callback?: (_: Config & Dim) => void
+): Config & Dim {
     const newConfig: Config & Dim = {
         ...config, 
         width: document.documentElement.clientWidth,
@@ -12,7 +15,7 @@ export function withDocumentDim<Config extends Object>(config: Config, callback?
         resize: (_: number, _h: number) => {},
     };
 
-    newConfig.resize = function(width: number, height: number) {
+    newConfig.resize = function(this: Config & Dim, width: number, height: number) {
         this.width = width;
         this.height = height;
         // console.log(this, width, height);

@@ -34,7 +34,7 @@ export type ParticleOptions = {
         ax: Float32Array,
         ay: Float32Array
     };
-} & Dim
+};
 
 export function createRandomParticleSeeding(
     length: number,
@@ -45,7 +45,7 @@ export function createRandomParticleSeeding(
     xAccelScale: number,
     yAccelScale: number,
 ): ParticleOptions {
-    return withDocumentDim({
+    return withDocumentDim<ParticleOptions>({
         type: 'Particle',
         timeStamp: performance.now(),
         length,
@@ -71,7 +71,7 @@ const clamp = (value: number, min: number, max: number) => (
 
 export function applyParticleTransformation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-    options: ParticleOptions & {
+    options: ParticleOptions & Dim & {
         textColor: string,
     }
 ) {

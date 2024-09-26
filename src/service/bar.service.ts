@@ -17,7 +17,7 @@ export type BarOptions = {
     barFactor: number,
     mirrored?: boolean,
     fn: (c: CanvasRenderingContext2D, _: any) => void,
-} & Dim
+};
 
 export function createOptionsForBar(frequencyIncr: number, mirrored?: boolean): BarOptions {
     return withDocumentDim<BarOptions>({

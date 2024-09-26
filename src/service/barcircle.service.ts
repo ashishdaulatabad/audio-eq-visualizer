@@ -16,10 +16,10 @@ export type BarCircleOptions = {
     timeStamp: number,
     mirrored?: boolean,
     angularVelocity: number,
-} & Dim
+}
 
-export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): BarCircleOptions {
-    return withDocumentDim({
+export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): BarCircleOptions & Dim {
+    return withDocumentDim<BarCircleOptions>({
         type: 'BarCircle',
         angleInit: 0,
         lineType: 'Default',

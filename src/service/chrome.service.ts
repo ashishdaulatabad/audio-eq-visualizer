@@ -9,7 +9,7 @@ export type ChromeAbbr = {
     r: ImageData,
     g: ImageData,
     b: ImageData,
-} & Dim;
+};
 
 init({ module_or_path: './wasm_eq_visualizer_bg.wasm' });
 
@@ -37,7 +37,7 @@ export function createBufferForChromaticAbberation(
     const outCanvas = new OffscreenCanvas(width, height);
     const outContext = outCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
 
-    return withDocumentDim({
+    return withDocumentDim<ChromeAbbr>({
         offCanvas,
         context,
         outCanvas,
