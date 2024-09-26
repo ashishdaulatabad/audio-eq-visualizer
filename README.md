@@ -1,6 +1,8 @@
 # Audio Eq Visualizer
 
-Note: Before running, check on how to build Rust code [here.](/wasm-fft/README.md)
+Audio Eq Visualizer, with Phase Vocoder Processing in Rust WASM.
+
+> Note: Before running, check on how to build Rust code [here.](/wasm-fft/README.md)
 
 To install dependencies:
 
