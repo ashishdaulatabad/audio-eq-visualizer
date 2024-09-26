@@ -1,6 +1,6 @@
 # Audio Eq Visualizer
 
-Note: Before running, check on how to build Rust code [here.](/wasm-eq/README.md)
+Note: Before running, check on how to build Rust code [here.](/wasm-fft/README.md)
 
 To install dependencies:
 
