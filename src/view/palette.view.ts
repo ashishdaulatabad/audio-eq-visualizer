@@ -52,7 +52,10 @@ export class CanvasThemeSelectorView {
 
         const list = mainDOM.children[1] as HTMLElement;
         const button = styleDom.children[1] as HTMLElement;
-        el(button).evt('click', (_) => el(list).tcls('collapsed'));
+        el(button).evt('click', (_) => {
+            el(button).tcls('rotate-180');
+            el(list).tcls('collapsed');
+        });
 
         return [mainDOM, paletteColors];
     }
@@ -123,8 +126,9 @@ export class CanvasThemeSelectorView {
             .inner([
                 el('span').mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold').innerText('Color Theme'),
                 el('button')
-                    .mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-300', 'border-[0]', 'ml-4', 'self-end', 'rotate-90')
-                    .innerHtml('>')
+                    .mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-700', 'text-gray-100', 'border-[0]', 'ml-4', 'self-end')
+                    .mcls('transition-transform', 'duration-200', 'ease-in-out')
+                    .innerHtml('\u25B2')
             ])
             .get();
 

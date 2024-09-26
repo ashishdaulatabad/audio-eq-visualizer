@@ -84,6 +84,6 @@ input.no-spinner::-webkit-outer-spin-button {
     max-height: calc(100% - 150px);
 }
 
-.seekbar:hover .seekbar-thumb {
-    min-height: 16px;
+.seekbar-thumb:hover {
+    /* min-height: 16px; */
 }

@@ -439,6 +439,15 @@ export function el<T extends HTMLElement>(tag: string | T) {
         },
 
         /**
+         * Toggle class
+         * @returns Self for transformation
+         */
+        mtcls (...cls: string[]) {
+            cls.forEach(cl => currentWorkingElement.classList.toggle(cl));
+            return this;
+        },
+
+        /**
          * Bulk add class
          * @returns Self for transformation
          */

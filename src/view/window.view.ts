@@ -24,7 +24,10 @@ function constructTitle(titleName: string) {
             el('span')
                 .mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold')
                 .innerText(titleName),
-            el('button').mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-300', 'border-[0]', 'ml-4', 'self-end')
+            el('button')
+                .mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-700', 'text-gray-100', 'border-[0]', 'ml-4', 'self-end')
+                .mcls('transition-transform', 'duration-200', 'ease-in-out')
+                .innerHtml('\u25B2')
         ).get();
 }
 
@@ -89,6 +92,7 @@ export class WindowView {
     // Font
     fontSize = 30;
     // button: HTMLElement;
+    playButton: HTMLElement;
     seekBarThumb: HTMLElement;
     fps: HTMLElement;
     totalTimer: number = 0;
@@ -102,8 +106,9 @@ export class WindowView {
         private audioService: GlobalAudioService,
         private subscriber: Subscriber,
     ) {
-        const [seekbarThumb, seekbarDOM] = this.constructSeekbar();
-        this.seekBarThumb = seekbarThumb;
+        const [seekbarThumb, playButton, seekbarDOM] = this.constructSeekbar();
+        this.seekBarThumb = seekbarThumb
+        this.playButton = playButton;
         const { canvas, canvasContext } = this.buildCanvas();
         this.canvas = canvas;
         this.canvasContext = canvasContext;
@@ -142,7 +147,7 @@ export class WindowView {
 
     createAudioPermissionButton() {
         return el('button')
-            .mcls('bg-blue-500', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
+            .mcls('bg-blue-700', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
             .innerHtml('Allow Media Control')
             .evt('click', this.allowMediaControl.bind(this))
             .get();
@@ -170,7 +175,7 @@ export class WindowView {
     
     createFileSelectionButton() {
         return el('button')
-            .mcls('bg-blue-500', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
+            .mcls('bg-blue-700', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
             .innerHtml('Select Audio File')
             .evt('click', this.selectMediaFile.bind(this))
             .get();
@@ -185,8 +190,8 @@ export class WindowView {
 
     initializeFpsCounter() {
         return el('div')
-            .mcls('absolute', 'w-32', 'bg-gray-800/40', 'top-0', 'text-gray-200')
-            .innerHtml('0')
+            .mcls('absolute', 'w-content', 'p-2', 'bg-gray-700/80', 'top-0', 'text-gray-200', 'rounded-b-lg')
+            .innerHtml('0 FPS')
             .get();
     }
 
@@ -210,7 +215,10 @@ export class WindowView {
 
         const view = panel.children[2] as HTMLElement;
         const button = title.children[1] as HTMLElement;
-        el(button).evt('click', (_) => el(view).tcls('collapsed'));
+        el(button).evt('click', (e) => {
+            el(button).tcls('rotate-180');
+            el(view).tcls('collapsed');
+        });
         return panel;
     }
 
@@ -256,11 +264,13 @@ export class WindowView {
         return [sourceBuffer, bufferSourceNode];
     }
 
-    onPlayerPausedOrResumed() {
+    onPlayerPausedOrResumed(evt?: Event) {
         if (this.audioService.paused) {
             this.audioService.resume();
+            el(this.playButton).innerHtml('\u23F8');
         } else {
             this.audioService.pause();
+            el(this.playButton).innerHtml('\u25B6');
         }
     }
 
@@ -277,7 +287,10 @@ export class WindowView {
 
         const view = viewDom.children[2] as HTMLElement;
         const button = title.children[1] as HTMLElement;
-        el(button).evt('click', (_) => el(view).tcls('collapsed'));
+        el(button).evt('click', (_) => {
+            el(button).tcls('rotate-180');
+            el(view).tcls('collapsed')
+        });
         return viewDom;
     }
     
@@ -356,32 +369,37 @@ export class WindowView {
         this.requestSeekbarAnimation();
     }
 
-    constructSeekbar(): [HTMLElement, HTMLElement] {
+    constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement] {
         const width = document.documentElement.clientWidth;
-        this.seekbarLength = width - 100;
+        this.seekbarLength = width - 50;
 
         const seekBarThumb = el('span')
             .mcls('seekbar-thumb', 'block', 'relative', 'bg-gray-100', 'rounded-[8px]', 'w-2', 'h-2', 'min-w-2', 'min-h-2', 'self-center')
             .mcls('transition-all', 'duration-[40ms]')
             .get();
 
+        const playButton = el('button')
+            .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-12', 'h-12', 'mt-4', 'rounded-[15px]')
+            .mcls('transition-transform', 'duration-200', 'ease-in', 'text-[20px]', 'text-gray-100')
+            .innerHtml('\u25B6')
+            .evt('click', this.onPlayerPausedOrResumed.bind(this))
+            .get()
+
         const seekbarDOM = el('div')
-            .mcls('seekbar', 'absolute', 'min-h-12', 'rounded-[24px]', 'bg-gray-700/40', 'flex', 'align-center')
-            .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg')
-            .styleAttr({
-                bottom: '50px',
-                left: '50px',
-            })
+            .mcls('seekbar', 'absolute', 'min-h-32', 'rounded-t-[3rem]', 'bg-gray-700/40', 'flex', 'self-center', 'align-center')
+            .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg', 'flex', 'flex-col')
+            .styleAttr({ bottom: '0', left: '25px' })
             .inner([
                 el('div')
-                    .mcls('tracker', 'bg-gray-400/60', 'w-avail', 'max-h-2', 'min-h-2', 'self-center', 'rounded-md', 'mx-4', 'flex')
+                    .mcls('tracker', 'bg-gray-400/60', 'w-avail', 'max-h-2', 'min-h-2', 'mt-8', 'rounded-md', 'mx-4')
                     .mcls('cursor-pointer')
                     .inner([seekBarThumb])
                     .evt('click', this.moveSeekbarClick.bind(this)),
+                el('div').mcls('flex', 'flex-col', 'self-center').inners(playButton)
             ])
             .get();
 
-        return [seekBarThumb, seekbarDOM];
+        return [seekBarThumb, playButton, seekbarDOM];
     }
 
     onOptionSelected(event: MouseEvent) {
@@ -407,11 +425,11 @@ export class WindowView {
 
     constructOptions() {
         return el('div')
-            .mcls('options', 'flex', 'flex-col')
+            .mcls('options', 'flex', 'flex-col', 'transition-all', 'duration-200', 'ease-in-out')
             .inner(
                 ['Bar', 'Bar Mirrored', 'Bar Circle', 'Wave Circle', 'Circle Spike', 'Wave'].map((type) =>
                     el('button')
-                        .mcls('border-0', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'rounded-[3px]')
+                        .mcls('border-0', 'hover:bg-gray-100/30', 'rounded-[3px]')
                         .mcls('text-gray-100', 'p-2')
                         .attr('data-type', type)
                         .evt('click', this.onOptionSelected.bind(this))
@@ -428,7 +446,10 @@ export class WindowView {
 
         const list = eqVisualizerOptions.children[1] as HTMLElement;
         const button = styleDom.children[1] as HTMLElement;
-        el(button).evt('click', (_) => el(list).tcls('collapsed'));
+        el(button).evt('click', (_) => {
+            el(button).tcls('rotate-180');
+            el(list).mtcls('collapsed')
+        });
 
         return eqVisualizerOptions;
     }
