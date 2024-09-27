@@ -388,7 +388,7 @@ export class WindowView {
         const seekbarDOM = el('div')
             .mcls('seekbar', 'absolute', 'min-h-32', 'rounded-t-[3rem]', 'bg-gray-700/40', 'flex', 'self-center', 'align-center')
             .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg', 'flex', 'flex-col')
-            .styleAttr({ bottom: '0', left: '25px' })
+            .styleAttr({ bottom: '0', left: '50px' })
             .inner([
                 el('div')
                     .mcls('tracker', 'bg-gray-400/60', 'w-avail', 'max-h-2', 'min-h-2', 'mt-8', 'rounded-md', 'mx-4')
