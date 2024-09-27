@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {},
     fontFamily: {
-      sans: ['Helvetica Neue', 'Arial', 'sans-serif'],
+      sans: ['Helvetica', 'Helvetica Neue', 'Roboto', 'Arial', 'sans-serif'],
       mono: ['Iosevka Nerd Font', 'Roboto Mono', 'ZedMono Nerd Font', 'SF Mono', 'monospace']
     }
   },

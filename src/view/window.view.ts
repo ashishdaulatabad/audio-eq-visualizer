@@ -62,6 +62,7 @@ export class WindowView {
         draw: [],
         effects: []
     };
+    font = 'Helvetica Neue, Helvetica, Roboto, sans-serif';
 
     mainDOM: HTMLDivElement;
     buffer: Uint8Array = new Uint8Array(0);
@@ -322,11 +323,11 @@ export class WindowView {
     }
 
     setTitle(canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
-        canvasContext.font = 'bold ' + this.fontSize + 'px Helvetica Neue';
+        canvasContext.font = 'bold ' + this.fontSize + 'px ' + this.font;
         canvasContext.fillStyle = this.textColor;
         canvasContext.fillText(`Playing Now:`, 30, 100);
 
-        canvasContext.font = this.fontSize + 'px Helvetica Neue';
+        canvasContext.font = this.fontSize + 'px ' + this.font;
         canvasContext.fillStyle = this.textColor;
         canvasContext.fillText(
             this.fileName ?? 'None (Drag and Drop .mp3/.wav file.)',
@@ -336,7 +337,7 @@ export class WindowView {
 
         if (this.audioService.audioContext) {
             const timerPos = 100 + this.fontSize + 10;
-            canvasContext.font = '300 ' + this.fontSize + 'px Helvetica Neue';
+            canvasContext.font = '300 ' + this.fontSize + 'px ' + this.font;
             canvasContext.fillStyle = this.textColor;
 
             const time = this.sourceBuffer.currentTime;
