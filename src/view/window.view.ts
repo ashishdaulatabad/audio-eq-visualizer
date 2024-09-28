@@ -171,6 +171,7 @@ export class WindowView {
         fileSplit.pop();
         this.fileName = fileSplit.join('.');
         this.timer = this.audioService.useAudioContext().currentTime;
+        this.setButtonToPlayedOrResumed(this.audioService.paused);
         this.run();
     }
     
@@ -265,14 +266,22 @@ export class WindowView {
         return [sourceBuffer, bufferSourceNode];
     }
 
+    setButtonToPlayedOrResumed(val: boolean) {
+        if (val) {
+            el(this.playButton).innerHtml('\u23F8');
+        } else {
+            el(this.playButton).innerHtml('\u25B6');
+        }
+    }
+
     onPlayerPausedOrResumed(evt?: Event) {
         if (this.audioService.paused) {
             this.audioService.resume();
-            el(this.playButton).innerHtml('\u23F8');
         } else {
             this.audioService.pause();
-            el(this.playButton).innerHtml('\u25B6');
         }
+
+        this.setButtonToPlayedOrResumed(this.audioService.paused)
     }
 
     setSliderContainer(sliderTitle: string, ...content: HTMLElement[]) {
@@ -372,7 +381,7 @@ export class WindowView {
 
     constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement] {
         const width = document.documentElement.clientWidth;
-        this.seekbarLength = width - 50;
+        this.seekbarLength = width - 100 - 32;
 
         const seekBarThumb = el('span')
             .mcls('seekbar-thumb', 'block', 'relative', 'bg-gray-100', 'rounded-[8px]', 'w-2', 'h-2', 'min-w-2', 'min-h-2', 'self-center')
@@ -544,7 +553,7 @@ export class WindowView {
         const width = document.documentElement.clientWidth;
         const height = document.documentElement.clientHeight;
 
-        this.seekbarLength = width - 100;
+        this.seekbarLength = width - 100 - 32;
          
         this.canvasAction.draw.forEach(config => config.resize(width, height));
 
@@ -673,8 +682,9 @@ export class WindowView {
 
             default:
                 break;
-        }   
+        }
 
+        this.setButtonToPlayedOrResumed(this.audioService.paused);
         this.run();
     }
 
