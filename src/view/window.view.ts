@@ -268,9 +268,9 @@ export class WindowView {
 
     setButtonToPlayedOrResumed(val: boolean) {
         if (val) {
-            el(this.playButton).innerHtml('\u23F8');
-        } else {
             el(this.playButton).innerHtml('\u25B6');
+        } else {
+            el(this.playButton).innerHtml('\u23F8');
         }
     }
 
