@@ -5,6 +5,10 @@ import { CanvasThemeSelectorView } from "./view/palette.view";
 import { PanelView } from "./view/panel.view";
 import { WindowView } from "./view/window.view";
 
+import { inject } from "@vercel/analytics";
+
+inject();
+
 // On page load or when changing themes, best to add inline in `head` to avoid FOUC
 function theme() {
     if (

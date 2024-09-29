@@ -38,6 +38,7 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
+        "@vercel/analytics": "^1.3.1",
         "wasm-eq-visualizer": "file:./wasm-eq-visualizer/pkg/",
         "wasm-fft": "file:./wasm-fft/pkg/"
     }
