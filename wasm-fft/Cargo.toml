@@ -19,5 +19,5 @@ web-sys = { version = "0.3.70", features = [
 wasm-bindgen-test = "0.3.34"
 
 [profile.release]
-opt-level = 2
+opt-level = 3
 lto = true
