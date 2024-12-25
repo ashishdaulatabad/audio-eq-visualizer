@@ -39,7 +39,7 @@ pub fn process_ola(
 ) -> Vec<f32> {
     apply_hann_window(channel, hann_buffer);
 
-    let fft_complex_buffer = wasm_fft::fft(channel, lookup_table);
+    let fft_complex_buffer = wasm_fft::radx4fft(channel, lookup_table);
 
     let peaks = find_peaks(&fft_complex_buffer);
     let len = peaks.len();
@@ -54,7 +54,7 @@ pub fn process_ola(
         time_cursor,
     );
 
-    let mut output = wasm_fft::ifft(&shifted_fft_complex, lookup_table);
+    let mut output = wasm_fft::radx4ifft(&shifted_fft_complex, lookup_table);
     apply_hann_window(&mut output, hann_buffer);
     output
 }
