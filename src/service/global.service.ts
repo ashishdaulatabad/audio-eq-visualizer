@@ -27,7 +27,7 @@ export class GlobalAudioService {
 
     createWorkletNode() {
         this.useAudioContext().audioWorklet.addModule('scripts/phase-vocoder.service.js').then(_ => {
-            this.audioWorkletNode = new AudioWorkletNode(this.useAudioContext(), 'phase-vocoder-processor'); 
+            this.audioWorkletNode = new AudioWorkletNode(this.useAudioContext(), 'phase-vocoder-processor');
             this.audioWorkletNode.port.postMessage({
                 data: this.wasmModule
             });
@@ -44,6 +44,10 @@ export class GlobalAudioService {
         }).catch(err => {
             console.error(err);
         });
+    }
+
+    setAudioFileChanged() {
+        this.audioWorkletNode?.port.postMessage({ changed: true });
     }
 
     changePitchFactor(value: number) {

@@ -95,6 +95,7 @@ export class WindowView {
     // button: HTMLElement;
     playButton: HTMLElement;
     seekBarThumb: HTMLElement;
+    seekbarTracker: HTMLElement;
     fps: HTMLElement;
     totalTimer: number = 0;
     seekbarLength: number = 0;
@@ -107,8 +108,9 @@ export class WindowView {
         private audioService: GlobalAudioService,
         private subscriber: Subscriber,
     ) {
-        const [seekbarThumb, playButton, seekbarDOM] = this.constructSeekbar();
+        const [seekbarThumb, seekbarTracker, playButton, seekbarDOM] = this.constructSeekbar();
         this.seekBarThumb = seekbarThumb
+        this.seekbarTracker = seekbarTracker;
         this.playButton = playButton;
         const { canvas, canvasContext } = this.buildCanvas();
         this.canvas = canvas;
@@ -137,6 +139,9 @@ export class WindowView {
 
             this.resetCanvas(this.canvasContext);
         });
+
+        /// Delay task of assigning width of the DOM Element
+        queueMicrotask(() => this.seekbarLength = this.seekbarTracker.offsetWidth);
     }
 
     allowMediaControl(_: Event) {
@@ -165,16 +170,17 @@ export class WindowView {
     }
 
     setSourceFile(file: File) {
-        [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(file, { playbackRate: 1 })
+        [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(file, { playbackRate: 1 });
         const fileSplit = file.name.split('.');
         this.audioService.setPaused(false);
         fileSplit.pop();
         this.fileName = fileSplit.join('.');
         this.timer = this.audioService.useAudioContext().currentTime;
         this.setButtonToPlayedOrResumed(this.audioService.paused);
+        this.audioService.setAudioFileChanged();
         this.run();
     }
-    
+
     createFileSelectionButton() {
         return el('button')
             .mcls('bg-blue-700', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-blue-700')
@@ -208,7 +214,7 @@ export class WindowView {
     createCheckBox() {
         const title = constructTitle('Modifiers');
         const panel = createPanelSection(
-            title, 
+            title,
              el('div')
                 .inners(
                     ...createInputTuple('checkbox', 'Toggle Spiral', this.onSpiralToggle.bind(this)),
@@ -229,7 +235,6 @@ export class WindowView {
             this.buildOptions(),
             this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
             this.setSliderContainer('Speed Factor', this.setSlider('speed')),
-            // this.createCheckBox(),
             this.createAudioPermissionButton(),
             this.createFileSelectionButton()
         ];
@@ -237,9 +242,7 @@ export class WindowView {
 
     setSourceNode(
         file: File | HTMLAudioElement,
-        options?: {
-            playbackRate: number
-        }
+        options?: { playbackRate: number }
     ): [HTMLAudioElement, MediaElementAudioSourceNode] {
         if (this.sourceBuffer) {
             this.bufferSourceNode.disconnect();
@@ -267,11 +270,7 @@ export class WindowView {
     }
 
     setButtonToPlayedOrResumed(val: boolean) {
-        if (val) {
-            el(this.playButton).innerHtml('\u25B6');
-        } else {
-            el(this.playButton).innerHtml('\u23F8');
-        }
+        el(this.playButton).innerHtml(val ? '\u25B6' : '\u23F8');
     }
 
     onPlayerPausedOrResumed(evt?: Event) {
@@ -303,7 +302,7 @@ export class WindowView {
         });
         return viewDom;
     }
-    
+
     setSliderValue(evt: Event) {
         const elem = evt.target as HTMLInputElement;
         const grandParent = elem.parentElement?.parentElement as HTMLElement;
@@ -323,8 +322,8 @@ export class WindowView {
         return el('input')
             .attr('type', 'range')
             .attr('data-change', change)
-            .attr('min', '0.6')
-            .attr('max', '1.4')
+            .attr('min', '0.5')
+            .attr('max', '1.5')
             .attr('value', '1')
             .attr('step', '0.01')
             .evt('input', this.setSliderValue.bind(this))
@@ -361,10 +360,7 @@ export class WindowView {
     }
 
     initializeAudio(...dom: HTMLElement[]) {
-        return el('div')
-            .mcls('eq', 'relative')
-            .inners(...dom)
-            .get<HTMLDivElement>();
+        return el('div').mcls('eq', 'relative').inners(...dom).get<HTMLDivElement>();
     }
 
     moveSeekbarClick(evt: MouseEvent) {
@@ -379,7 +375,7 @@ export class WindowView {
         this.requestSeekbarAnimation();
     }
 
-    constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement] {
+    constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement, HTMLElement] {
         const width = document.documentElement.clientWidth;
         this.seekbarLength = width - 100 - 32;
 
@@ -389,27 +385,30 @@ export class WindowView {
             .get();
 
         const playButton = el('button')
-            .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-12', 'h-12', 'mt-4', 'rounded-[15px]')
+            .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-10', 'h-10', 'mt-4', 'rounded-full')
             .mcls('transition-transform', 'duration-200', 'ease-in', 'text-[20px]', 'text-gray-100')
             .innerHtml('\u25B6')
             .evt('click', this.onPlayerPausedOrResumed.bind(this))
             .get()
 
+        const seekbarTracker = el('div')
+            .mcls('tracker', 'bg-gray-400/60', 'w-avail', 'max-h-2', 'min-h-2', 'mt-8', 'rounded-md', 'mx-16')
+            .mcls('cursor-pointer')
+            .inner([seekBarThumb])
+            .evt('click', this.moveSeekbarClick.bind(this))
+            .get();
+
         const seekbarDOM = el('div')
-            .mcls('seekbar', 'absolute', 'min-h-32', 'rounded-t-[3rem]', 'bg-gray-700/40', 'flex', 'self-center', 'align-center')
+            .mcls('seekbar', 'absolute', 'min-h-28', 'rounded-[4rem]', 'bg-gray-700/40', 'flex', 'self-center', 'align-center')
             .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg', 'flex', 'flex-col')
-            .styleAttr({ bottom: '0', left: '50px' })
+            .styleAttr({ bottom: '10px', left: '50px' })
             .inner([
-                el('div')
-                    .mcls('tracker', 'bg-gray-400/60', 'w-avail', 'max-h-2', 'min-h-2', 'mt-8', 'rounded-md', 'mx-4')
-                    .mcls('cursor-pointer')
-                    .inner([seekBarThumb])
-                    .evt('click', this.moveSeekbarClick.bind(this)),
+                seekbarTracker,
                 el('div').mcls('flex', 'flex-col', 'self-center').inners(playButton)
             ])
             .get();
 
-        return [seekBarThumb, playButton, seekbarDOM];
+        return [seekBarThumb, seekbarTracker, playButton, seekbarDOM];
     }
 
     onOptionSelected(event: MouseEvent) {
@@ -472,31 +471,36 @@ export class WindowView {
     }
 
     resetCanvas(canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D) {
-        this.width = document.documentElement.clientWidth;
-        this.height = document.documentElement.clientHeight;
+        const width = document.documentElement.clientWidth;
+        const height = document.documentElement.clientHeight;
 
         canvasContext.fillStyle = this.backColor;
-        canvasContext.fillRect(0, 0, this.width, this.height);
+        canvasContext.fillRect(0, 0, width, height);
 
         if (!(canvasContext instanceof OffscreenCanvasRenderingContext2D)) {
             this.setTitle(canvasContext);
         }
 
         canvasContext.strokeStyle = this.textColor;
+        this.width = width;
+        this.height = height;
     }
 
-    buildCanvas(contextType: string = '2d'): { 
+    buildCanvas(contextType: string = '2d'): {
         canvas: HTMLCanvasElement,
-        canvasContext: CanvasRenderingContext2D 
+        canvasContext: CanvasRenderingContext2D
     } {
-        this.width = document.documentElement.clientWidth;
-        this.height = document.documentElement.clientHeight;
+        const width = document.documentElement.clientWidth;
+        const height = document.documentElement.clientHeight;
 
         const canvas = el('canvas')
             .mcls('wave')
-            .attr('width', this.width.toString())
-            .attr('height', this.height.toString())
+            .attr('width', width.toString())
+            .attr('height', height.toString())
             .get<HTMLCanvasElement>();
+
+        this.width = width;
+        this.height = height;
 
         const canvasContext = canvas.getContext(contextType) as CanvasRenderingContext2D;
         return { canvas, canvasContext };
@@ -553,8 +557,7 @@ export class WindowView {
         const width = document.documentElement.clientWidth;
         const height = document.documentElement.clientHeight;
 
-        this.seekbarLength = width - 100 - 32;
-         
+        this.seekbarLength = this.seekbarTracker.offsetWidth;
         this.canvasAction.draw.forEach(config => config.resize(width, height));
 
         el(this.canvas)
@@ -563,7 +566,7 @@ export class WindowView {
             .attr('height', height.toString())
             .get<HTMLCanvasElement>();
 
-        this.offscreenCanvas.width = width; 
+        this.offscreenCanvas.width = width;
         this.offscreenCanvas.height = height;
         this.width = width;
         this.height = height;
@@ -597,17 +600,7 @@ export class WindowView {
         this.resetCanvas(this.offContext)
         this.setTitle(this.offContext);
         applyTransformation(this.offContext, this.canvasAction.draw);
-        // chromaticAbberationTransform(this.offContext, {
-        //     width: this.width,
-        //     height: this.height,
-        //     bxDrift: 1,
-        //     byDrift: 1,
-        //     rxDrift: 2,
-        //     ryDrift: -1,
-        //     gxDrift: 0,
-        //     gyDrift: 2,
-        //     channelData: this.channelData
-        // });
+
         this.canvasContext.drawImage(this.offscreenCanvas, 0, 0);
         this.canvasContext.stroke();
         this.animationFrame = requestAnimationFrame(this.requestAnimation.bind(this));
@@ -667,7 +660,7 @@ export class WindowView {
                 addOrInsert(this.canvasAction, value);
                 break;
             }
-            
+
             case 'Bar Circle':
             case 'Bar Circle Mirrored': {
                 this.analyser = this.initializeAnalyzerBar();

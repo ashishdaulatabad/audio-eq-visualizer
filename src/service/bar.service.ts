@@ -47,17 +47,11 @@ function drawRetroForBar(
     toY: number,
 ) {
     const magnitude = Math.abs(toY - fromY);
-    const block = 25,
-        padding = 8;
+    const block = 25, padding = 8;
     context.lineCap = 'square';
-    let ix = fromX,
-        iy = fromY;
+    let ix = fromX, iy = fromY;
 
-    for (
-        let iter = 0, rBlock = 0;
-        rBlock < magnitude;
-        rBlock += block, iter += 1
-    ) {
+    for (let iter = 0, rBlock = 0; rBlock < magnitude; rBlock += block, iter += 1) {
         context.fillStyle = color(rBlock);
         context.fillRect(ix, iy, width, block - padding);
         iy -= block;
@@ -135,7 +129,7 @@ export function barFormation(
                 if (v > 0) {
                     const y = utility.linearToPower(v, 4, 256, options.volumeScaling) * (options.barFactor / 1.65);
                     canvasContext.fillStyle = tempFill;
-                    drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, base - y); 
+                    drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, base - y);
                     canvasContext.fillStyle = tempFill + "90";
                     drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, base + y);
                 }

@@ -16,11 +16,8 @@ function generateWLookup(length) {
 
     for (let index = 0; index < length; index += 2) {
         const angle = (Math.PI * index) / length;
-        const real = Math.cos(angle),
-            img = Math.sin(angle);
-
-        lookUp[index] = real;
-        lookUp[index + 1] = img;
+        lookUp[index] = Math.cos(angle)
+        lookUp[index + 1] = Math.sin(angle);
     }
 
     return lookUp;
@@ -210,18 +207,24 @@ class PhaseVocoderProcessor extends OLAProcessor {
     }
 
     async onmessage(data) {
-        const instance = async () => {
-            try {
-                WebAssembly.compile(data.data).then(async data => {
-                    await init({ module_or_path: data });
-                    this.processed = true;
-                    this.port.postMessage({ wasm_init: true });
-                }); 
-            } catch (e) {
-                console.error(e);
+        if (data.hasOwnProperty('data')) {
+            const instance = async () => {
+                try {
+                    WebAssembly.compile(data.data).then(async data => {
+                        await init({ module_or_path: data });
+                        this.processed = true;
+                        this.port.postMessage({ wasm_init: true });
+                    });
+                } catch (e) {
+                    console.error(e);
+                }
             }
+            instance();
+        } else if (data.hasOwnProperty('changed')) {
+            this.processCounter = 0;
+            this.timeCursor = 0;
+            this.reallocateChannelsIfNeeded([[]], [[]]);
         }
-        instance();
     }
 
     constructor(options) {

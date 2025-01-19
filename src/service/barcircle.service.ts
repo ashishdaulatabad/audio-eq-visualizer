@@ -52,10 +52,9 @@ export function barCircleFormation(
     }
 ) {
     options.analyser.getFloatFrequencyData(options.buffer);
-    const buffer = options.buffer,
-          centerX = options.width / 2, 
-          centerY = options.height / 2,
-          anglePerBar = (options.mirrored ? 1 : 2) * Math.PI / (options.bandRanges.length * options.circleBarCount);
+    const buffer = options.buffer;
+    const centerX = options.width / 2, centerY = options.height / 2;
+    const anglePerBar = (options.mirrored ? 1 : 2) * Math.PI / (options.bandRanges.length * options.circleBarCount);
 
     let theta = options.angleInit;
 
