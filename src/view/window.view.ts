@@ -469,9 +469,9 @@ export class WindowView {
     }
 
     constructEqualizer() {
-        const create_element = (index: number) => {
+        const create_element = (index: number, frequency: number) => {
             const element = el('label')
-                .mcls('text-white', 'inline-block', 'w-8', 'mr-4')
+                .mcls('text-white', 'inline-block', 'w-8', 'mr-4', 'text-xs')
                 .innerText('1.0').get();
             const input = el('input')
                 .attr('type', 'range')
@@ -482,17 +482,21 @@ export class WindowView {
                     element.innerHTML = (e.target as HTMLInputElement).value;
                     this.audioService.onEqualizerBandChanged(index, parseFloat((e.target as HTMLInputElement).value));
                 }).get();
+            const hz = el('span')
+                .mcls('text-white', 'inline-block', 'w-16', 'ml-2', 'text-xs', 'text-right')
+                .innerText(frequency.toString() + ' Hz')
+                .get();
 
-            return [element as Node, input as Node];
+            return [element as Node, input as Node, hz as Node];
         };
 
         return el('div')
-            .mcls('flex', 'flex-col', 'min-h-32', 'mt-4')
+            .mcls('flex', 'flex-col', 'min-h-32', 'mb-4')
             .inner(
-                Array.from({length: 5}, (_, index: number) => {
+                [50, 200, 1000, 5000, 10000].map((freq: number, index: number) => {
                     return el('div')
-                        .mcls('min-w-24')
-                        .inners(...create_element(index))
+                        .mcls('min-w-28', 'inline-flex', 'items-center', 'mt-4')
+                        .inners(...create_element(index, freq))
                         .get()
                 })
             ).get()
