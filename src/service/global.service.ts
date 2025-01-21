@@ -46,8 +46,16 @@ export class GlobalAudioService {
         });
     }
 
-    setAudioFileChanged() {
-        this.audioWorkletNode?.port.postMessage({ changed: true });
+    setAudioFileChanged(sampleRate: number) {
+        this.audioWorkletNode?.port.postMessage({ changed: true, sampleRate });
+    }
+
+    onEqualizerBandChanged(index: number, value: number) {
+        this.audioWorkletNode?.port.postMessage({
+            eqchange: true,
+            index,
+            value
+        });
     }
 
     changePitchFactor(value: number) {

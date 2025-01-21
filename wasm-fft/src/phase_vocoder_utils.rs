@@ -1,5 +1,7 @@
 use wasm_bindgen::prelude::*;
 
+use crate::eq::eq_handler;
+
 /// Find all the peaks performed during FFT of
 /// `complex_array`
 fn find_peaks(complex_array: &[f32]) -> Vec<isize> {
@@ -36,6 +38,9 @@ pub fn process_ola(
     lookup_table: &[f32],
     pitch_factor: f32,
     time_cursor: f32,
+    frequency_increment: f32,
+    bands: &[f32],
+    multiplier: &[f32],
 ) -> Vec<f32> {
     apply_hann_window(channel, hann_buffer);
 
@@ -44,7 +49,7 @@ pub fn process_ola(
     let peaks = find_peaks(&fft_complex_buffer);
     let len = peaks.len();
 
-    let shifted_fft_complex = shift_peaks(
+    let mut shifted_fft_complex = shift_peaks(
         channel.len(),
         &fft_complex_buffer,
         peaks,
@@ -52,6 +57,13 @@ pub fn process_ola(
         len as isize,
         pitch_factor,
         time_cursor,
+    );
+
+    eq_handler(
+        &mut shifted_fft_complex,
+        frequency_increment,
+        bands,
+        multiplier,
     );
 
     let mut output = wasm_fft::radx4ifft(&shifted_fft_complex, lookup_table);

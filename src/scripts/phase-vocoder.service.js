@@ -26,6 +26,8 @@ function generateWLookup(length) {
 const BUFFERED_BLOCK_SIZE = 8192;
 const WEBAUDIO_BLOCK_SIZE = 128;
 const processSize = 1024;
+const frequency = new Float32Array([50, 200, 1000, 5000, 10000]);
+const multiplier = new Float32Array([1, 1, 1, 1, 1]);
 
 /// Credits to: https://github.com/olvb/phaze
 class OLAProcessor extends AudioWorkletProcessor {
@@ -223,7 +225,11 @@ class PhaseVocoderProcessor extends OLAProcessor {
         } else if (data.hasOwnProperty('changed')) {
             this.processCounter = 0;
             this.timeCursor = 0;
+            this.freqIncr = (data.hasOwnProperty('sampleRate') ? data.sampleRate : 24000) / BUFFERED_BLOCK_SIZE;
             this.reallocateChannelsIfNeeded([[]], [[]]);
+        } else if (data.hasOwnProperty('eqchange')) {
+            const index = data.index;
+            multiplier[index] = data.value;
         }
     }
 
@@ -240,6 +246,7 @@ class PhaseVocoderProcessor extends OLAProcessor {
         this.processed = false;
         this.fftSize = this.blockSize;
         this.timeCursor = 0;
+        this.freqIncr = 24000 / BUFFERED_BLOCK_SIZE;
 
         this.lookUp = generateWLookup(this.fftSize);
         this.hannWindow = genHannWindow(this.blockSize);
@@ -254,7 +261,17 @@ class PhaseVocoderProcessor extends OLAProcessor {
                 const output = outputs[i][j];
 
                 if (this.processed) {
-                    output.set(process_ola(input, this.hannWindow, this.lookUp, pitchFactor, this.timeCursor));
+                    const out = process_ola(
+                        input,
+                        this.hannWindow,
+                        this.lookUp,
+                        pitchFactor,
+                        this.timeCursor,
+                        this.freqIncr,
+                        frequency,
+                        multiplier
+                    );
+                    output.set(out);
                 } else {
                     output.set(input);
                 }

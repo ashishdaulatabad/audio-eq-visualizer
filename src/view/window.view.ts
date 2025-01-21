@@ -51,6 +51,7 @@ export class WindowView {
     textColor: string = 'rgb(216 220 235)';
     seekPadding: number = 200;
     prevTimer = performance.now();
+    frameTimingDelay = 0;
     width: number = document.documentElement.clientWidth;
     height: number = document.documentElement.clientWidth;
     timer: number = 0.0;
@@ -77,6 +78,8 @@ export class WindowView {
     bufferLength: number = 0;
     // FFT Size
     fftSize: number = 16384;
+    /// Sample Rate
+    sampleRate: number = 24000;
     /// Wave
     animationFrame: number | null = 0;
     /// seekbar
@@ -170,6 +173,7 @@ export class WindowView {
     }
 
     setSourceFile(file: File) {
+        if (!(file instanceof File)) return;
         [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(file, { playbackRate: 1 });
         const fileSplit = file.name.split('.');
         this.audioService.setPaused(false);
@@ -177,7 +181,7 @@ export class WindowView {
         this.fileName = fileSplit.join('.');
         this.timer = this.audioService.useAudioContext().currentTime;
         this.setButtonToPlayedOrResumed(this.audioService.paused);
-        this.audioService.setAudioFileChanged();
+        this.audioService.setAudioFileChanged(this.sampleRate);
         this.run();
     }
 
@@ -232,7 +236,8 @@ export class WindowView {
 
     getAllAttachableViews(): HTMLElement[] {
         return [
-            this.buildOptions(),
+            this.buildVisualizerOptionPanel(),
+            this.buildEqPanel(),
             this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
             this.setSliderContainer('Speed Factor', this.setSlider('speed')),
             this.createAudioPermissionButton(),
@@ -449,9 +454,53 @@ export class WindowView {
             .get();
     }
 
-    buildOptions() {
+    buildVisualizerOptionPanel() {
         const styleDom = constructTitle('Visualizer Type');
         const eqVisualizerOptions = createPanelSection(styleDom, this.constructOptions());
+
+        const list = eqVisualizerOptions.children[1] as HTMLElement;
+        const button = styleDom.children[1] as HTMLElement;
+        el(button).evt('click', (_) => {
+            el(button).tcls('rotate-180');
+            el(list).mtcls('collapsed')
+        });
+
+        return eqVisualizerOptions;
+    }
+
+    constructEqualizer() {
+        const create_element = (index: number) => {
+            const element = el('label')
+                .mcls('text-white', 'inline-block', 'w-8', 'mr-4')
+                .innerText('1.0').get();
+            const input = el('input')
+                .attr('type', 'range')
+                .attr('min', '0.0')
+                .attr('max', '1.5')
+                .attr('step', '0.01')
+                .evt('input', (e: Event) => {
+                    element.innerHTML = (e.target as HTMLInputElement).value;
+                    this.audioService.onEqualizerBandChanged(index, parseFloat((e.target as HTMLInputElement).value));
+                }).get();
+
+            return [element as Node, input as Node];
+        };
+
+        return el('div')
+            .mcls('flex', 'flex-col', 'min-h-32', 'mt-4')
+            .inner(
+                Array.from({length: 5}, (_, index: number) => {
+                    return el('div')
+                        .mcls('min-w-24')
+                        .inners(...create_element(index))
+                        .get()
+                })
+            ).get()
+    }
+
+    buildEqPanel() {
+        const styleDom = constructTitle('Equalizer');
+        const eqVisualizerOptions = createPanelSection(styleDom, this.constructEqualizer());
 
         const list = eqVisualizerOptions.children[1] as HTMLElement;
         const button = styleDom.children[1] as HTMLElement;
@@ -524,8 +573,8 @@ export class WindowView {
     }
 
     setBufferSize() {
-        const frequency = this.audioService.useAudioContext().sampleRate / 2.0;
-        return frequency / this.bufferLength;
+        this.sampleRate = this.audioService.useAudioContext().sampleRate / 2.0;
+        return this.sampleRate / this.bufferLength;
     }
 
     initializeAnalyzerBar() {
@@ -549,7 +598,10 @@ export class WindowView {
 
     setFps() {
         const currentTimer = performance.now();
-        el(this.fps).innerHtml(`${Math.round(1000 / (currentTimer - this.prevTimer))} FPS`);
+        if (currentTimer - this.frameTimingDelay > 200) {
+            el(this.fps).innerHtml(`${Math.round(1000 / (currentTimer - this.prevTimer))} FPS`);
+            this.frameTimingDelay = currentTimer;
+        }
         this.prevTimer = currentTimer;
     }
 
