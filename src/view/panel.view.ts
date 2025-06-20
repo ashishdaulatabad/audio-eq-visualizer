@@ -4,7 +4,9 @@ import { Subscriber } from "../common/subscriber";
 export class PanelView {
     mainDOM: HTMLElement;
 
-    constructor(private subscriber: Subscriber) {
+    constructor(
+        private subscriber: Subscriber
+    ) {
         this.mainDOM = this.constructPanelView();
     }
 

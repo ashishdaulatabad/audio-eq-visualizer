@@ -22,6 +22,7 @@ export function complement(rgb: string) {
 export type ParticleOptions = {
     type: 'Particle',
     timeStamp: number,
+    randomTimestamp: number,
     length: number,
     fn: (c: CanvasRenderingContext2D, _: any) => void,
     isSpiral: boolean,
@@ -32,7 +33,8 @@ export type ParticleOptions = {
         vx: Float32Array,
         vy: Float32Array,
         ax: Float32Array,
-        ay: Float32Array
+        ay: Float32Array,
+        rd: Float32Array
     };
 };
 
@@ -48,6 +50,7 @@ export function createRandomParticleSeeding(
     return withDocumentDim<ParticleOptions>({
         type: 'Particle',
         timeStamp: performance.now(),
+        randomTimestamp: performance.now(),
         length,
         fn: applyParticleTransformation,
         isSpiral: false,
@@ -61,6 +64,7 @@ export function createRandomParticleSeeding(
             vy: new Float32Array(length).map(_ => (Math.random() * yVelScale)),
             ax: new Float32Array(length).map(_ => (Math.random() * xAccelScale)),
             ay: new Float32Array(length).map(_ => (Math.random() * yAccelScale)),
+            rd: new Float32Array(length).map(_ => (Math.random())),
         },
     });
 }
@@ -80,21 +84,30 @@ export function applyParticleTransformation(
     const currentTimeStamp = performance.now();
 
     const timeChange = (currentTimeStamp - options.timeStamp) / 1000;
+    const timeExceeded = currentTimeStamp - options.randomTimestamp > 500;
+
     for (let index = 0; index < options.length; ++index) {
-        let [x, y, vx, vy, ax, ay] = [
+        let [x, y, vx, vy, ax, ay, rd] = [
             options.buffer.x[index],
             options.buffer.y[index],
             options.buffer.vx[index],
             options.buffer.vy[index],
             options.buffer.ax[index],
             options.buffer.ay[index],
+            timeExceeded ? options.buffer.rd[index] : Math.random()
         ];
         if (options.isSpiral) {
             canvasContext.fillRect(x, y, 1 + (vx > 0 ? 1 : 0), 1 + (vx > 0 ? 1 : 0));
-            [ax, ay] = Complex.vec(8, Math.random() * Math.PI).coord();
+            // let rand = rd * Math.PI;
+            // ax = 8 * Math.cos(rand);
+            // ay = 8 * Math.sin(rand);
+            [ax, ay] = Complex.vec(16, rd * Math.PI).coord();
         } else {
             canvasContext.fillRect(x, y, 1, 1);
-            [ax, ay] = Complex.vec(16, 2 * Math.random() * Math.PI).coord();
+            // let rand = 2 * rd * Math.PI;
+            // ax = 64 * Math.cos(rand);
+            // ay = 64 * Math.sin(rand);
+            [ax, ay] = Complex.vec(64, 2 * rd * Math.PI).coord();
         }
 
         vx += ax * timeChange;
@@ -123,8 +136,14 @@ export function applyParticleTransformation(
         options.buffer.vy[index] = vy;
         options.buffer.ax[index] = ax;
         options.buffer.ay[index] = ay;
+        options.buffer.rd[index] = rd;
     }
 
     options.timeStamp = currentTimeStamp;
+
+    if (timeExceeded) {
+        options.randomTimestamp = currentTimeStamp;
+    }
+
     canvasContext.stroke();
 }

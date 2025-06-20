@@ -43,7 +43,7 @@ export function createOptionsForWaveCircle(frequencyIncr: number, isCircleSpike?
 export function waveCircleFormation(
     canvasContext: CanvasRenderingContext2D,
     options: WaveCircleOptions & Dim & {
-        buffer: Float32Array,
+        buffer: Float32Array<ArrayBuffer>,
         analyser: AnalyserNode,
     }
 ) {
@@ -71,10 +71,8 @@ export function waveCircleFormation(
         for (; perBandValue < options.waveCounts; ++perBandValue, i += indexIncrement) {
             const v = options.buffer[Math.ceil(i)] + 128.0;
 
-            const y =
-                utility.linearToPower(v, 4, 256, options.volumeScaling) *
-                options.barCircleFactor;
-
+            const y = utility.linearToPower(v, 4, 256, options.volumeScaling) * options.barCircleFactor;
+            // Todo: Make naive instead of complex array.
             const normal = unitAng.muln(y);
             const [xc, yc] = angle.coord();
             const [xb, yb] = normal.coord();
@@ -107,7 +105,7 @@ export function waveCircleFormation(
 export function circleSpikeFormation(
     canvasContext: CanvasRenderingContext2D,
     options: WaveCircleOptions & {
-        buffer: Float32Array,
+        buffer: Float32Array<ArrayBuffer>,
         width: number,
         analyser: AnalyserNode,
         height: number,

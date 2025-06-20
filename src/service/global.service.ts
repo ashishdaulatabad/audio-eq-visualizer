@@ -74,6 +74,7 @@ export class GlobalAudioService {
         if (!this.audioContext) {
             this.audioContext = new AudioContext();
             this.mainGain = this.audioContext.createGain();
+            this.mainGain.gain.value = 1.25;
             this.createWorkletNode();
         }
 

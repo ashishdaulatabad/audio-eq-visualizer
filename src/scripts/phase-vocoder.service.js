@@ -25,7 +25,7 @@ function generateWLookup(length) {
 
 const BUFFERED_BLOCK_SIZE = 8192;
 const WEBAUDIO_BLOCK_SIZE = 128;
-const processSize = 1024;
+const processSize = 2048;
 const frequency = new Float32Array([50, 200, 1000, 5000, 10000]);
 const multiplier = new Float32Array([1, 1, 1, 1, 1]);
 

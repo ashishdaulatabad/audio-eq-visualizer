@@ -36,13 +36,11 @@ function createInputTuple(
     label: string,
     evtCall: (_: InputEvent) => void
 ) {
-    return [
-        el('div')
-            .inners(
-                el('input').inputType(inputType).attr('name', 'toggle-spiral').evt('change', evtCall),
-                el('label').attr('for', 'toggle-spiral').mcls('text-gray-200', 'p-2').innerHtml(label).get(),
-            )
-    ]
+    return [el('div')
+        .inners(
+            el('input').inputType(inputType).attr('name', 'toggle-spiral').evt('change', evtCall),
+            el('label').attr('for', 'toggle-spiral').mcls('text-gray-200', 'p-2').innerHtml(label).get(),
+    )]
 }
 
 export class WindowView {
@@ -63,11 +61,14 @@ export class WindowView {
         draw: [],
         effects: []
     };
+    allAudioFiles: File[] = [];
+    replay = false;
+    currentFileIndex = -1;
     font = 'Helvetica Neue, Helvetica, Roboto, sans-serif';
 
     mainDOM: HTMLDivElement;
     buffer: Uint8Array = new Uint8Array(0);
-    frequencyBuffer: Float32Array = new Float32Array(1);
+    frequencyBuffer: Float32Array = new Float32Array(0);
     canvas: HTMLCanvasElement;
     offscreenCanvas: OffscreenCanvas;
     offContext: OffscreenCanvasRenderingContext2D;
@@ -97,6 +98,7 @@ export class WindowView {
     fontSize = 30;
     // button: HTMLElement;
     playButton: HTMLElement;
+    replayButton: HTMLElement;
     seekBarThumb: HTMLElement;
     seekbarTracker: HTMLElement;
     fps: HTMLElement;
@@ -111,10 +113,11 @@ export class WindowView {
         private audioService: GlobalAudioService,
         private subscriber: Subscriber,
     ) {
-        const [seekbarThumb, seekbarTracker, playButton, seekbarDOM] = this.constructSeekbar();
+        const [seekbarThumb, seekbarTracker, playButton, loopButton, seekbarDOM] = this.constructSeekbar();
         this.seekBarThumb = seekbarThumb
         this.seekbarTracker = seekbarTracker;
         this.playButton = playButton;
+        this.replayButton = loopButton;
         const { canvas, canvasContext } = this.buildCanvas();
         this.canvas = canvas;
         this.canvasContext = canvasContext;
@@ -163,25 +166,36 @@ export class WindowView {
     }
 
     selectMediaFile(_: MouseEvent) {
-        const input = el('input')
-            .attr('type', 'file')
-            .attr('accept', 'audio/*')
-            .get();
-
+        const input = el('input').inputType('file').attr('accept', 'audio/*').get();
         input.onchange = (event: any) => this.setSourceFile(event.target.files[0]);
         input.click();
     }
 
+    addToExistingAudioFiles(file: File) {
+        const copy = this.allAudioFiles.find(fileInList => fileInList === file);
+
+        if (!copy) {
+            this.allAudioFiles.push(file);
+        }
+    }
+
     setSourceFile(file: File) {
-        if (!(file instanceof File)) return;
+        if (!(file instanceof File)) {
+            return;
+        }
+
         [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(file, { playbackRate: 1 });
+
         const fileSplit = file.name.split('.');
-        this.audioService.setPaused(false);
         fileSplit.pop();
         this.fileName = fileSplit.join('.');
+
+        this.audioService.setPaused(false);
         this.timer = this.audioService.useAudioContext().currentTime;
+
         this.setButtonToPlayedOrResumed(this.audioService.paused);
         this.audioService.setAudioFileChanged(this.sampleRate);
+
         this.run();
     }
 
@@ -220,13 +234,12 @@ export class WindowView {
         const panel = createPanelSection(
             title,
              el('div')
-                .inners(
-                    ...createInputTuple('checkbox', 'Toggle Spiral', this.onSpiralToggle.bind(this)),
-                ).get()
+                .inners(...createInputTuple('checkbox', 'Toggle Spiral', this.onSpiralToggle.bind(this))).get()
         );
 
         const view = panel.children[2] as HTMLElement;
         const button = title.children[1] as HTMLElement;
+
         el(button).evt('click', (e) => {
             el(button).tcls('rotate-180');
             el(view).tcls('collapsed');
@@ -241,8 +254,12 @@ export class WindowView {
             this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
             this.setSliderContainer('Speed Factor', this.setSlider('speed')),
             this.createAudioPermissionButton(),
-            this.createFileSelectionButton()
+            this.createFileSelectionButton(),
         ];
+    }
+
+    getFileList() {
+        
     }
 
     setSourceNode(
@@ -271,6 +288,21 @@ export class WindowView {
             bufferSourceNode.mediaElement.playbackRate = options.playbackRate;
         }
 
+        if (this.replay) {
+            if (this.sourceBuffer.ended) {
+                this.audioService.setAudioFileChanged(this.sampleRate);
+                this.sourceBuffer.currentTime = 0;
+                this.sourceBuffer.play();
+            }
+            this.sourceBuffer.onended = () => {
+                this.audioService.setAudioFileChanged(this.sampleRate);
+                this.sourceBuffer.currentTime = 0;
+                this.sourceBuffer.play();
+            }
+        } else {
+            sourceBuffer.onended = null;
+        }
+
         return [sourceBuffer, bufferSourceNode];
     }
 
@@ -286,6 +318,35 @@ export class WindowView {
         }
 
         this.setButtonToPlayedOrResumed(this.audioService.paused)
+    }
+
+    onReplay(evt: Event) {
+        this.replay = !this.replay;
+
+        el(this.replayButton)
+            .tcls('bg-gray-600/40')
+            .tcls('border')
+            .tcls('border-solid')
+            .tcls('border-gray-100')
+            .tcls('bg-gray-600/80')
+            .attr('title', this.replay ? 'Loop: Active' : 'Loop: Inactive');
+     
+        if (this.sourceBuffer) {
+            if (this.replay) {
+                if (this.sourceBuffer.ended) {
+                    this.audioService.setAudioFileChanged(this.sampleRate);
+                    this.sourceBuffer.currentTime = 0;
+                    this.sourceBuffer.play();
+                }
+                this.sourceBuffer.onended = () => {
+                    this.audioService.setAudioFileChanged(this.sampleRate);
+                    this.sourceBuffer.currentTime = 0;
+                    this.sourceBuffer.play();
+                }
+            } else {
+                this.sourceBuffer.onended = null;
+            }
+        }
     }
 
     setSliderContainer(sliderTitle: string, ...content: HTMLElement[]) {
@@ -314,12 +375,14 @@ export class WindowView {
         grandParent.children[1].innerHTML = elem.value.toString();
 
         switch (elem.getAttribute('data-change')) {
-            case 'pitch':
+            case 'pitch': {
                 this.audioService.changePitchFactor(parseFloat(elem.value));
                 break;
-            case 'speed':
+            }
+            case 'speed': {
                 this.bufferSourceNode.mediaElement.playbackRate = parseFloat(elem.value);
                 break;
+            }
         }
     }
 
@@ -358,6 +421,11 @@ export class WindowView {
             canvasContext.fillText(utility.timerSec(time), 30, timerPos + this.fontSize + 10);
             canvasContext.fillStyle = this.backColor;
         }
+
+        // canvasContext.shadowColor = this.textColor;
+        // canvasContext.shadowBlur = 5;
+        // canvasContext.shadowOffsetX = 3;
+        // canvasContext.shadowOffsetY = 3;
     }
 
     getView() {
@@ -380,7 +448,7 @@ export class WindowView {
         this.requestSeekbarAnimation();
     }
 
-    constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement, HTMLElement] {
+    constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement, HTMLElement, HTMLElement] {
         const width = document.documentElement.clientWidth;
         this.seekbarLength = width - 100 - 32;
 
@@ -390,11 +458,19 @@ export class WindowView {
             .get();
 
         const playButton = el('button')
-            .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-10', 'h-10', 'mt-4', 'rounded-full')
+            .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-10', 'm-2', 'h-10', 'mt-4', 'rounded-full')
             .mcls('transition-transform', 'duration-200', 'ease-in', 'text-[20px]', 'text-gray-100')
             .innerHtml('\u25B6')
             .evt('click', this.onPlayerPausedOrResumed.bind(this))
-            .get()
+            .get();
+
+        const loopButton = el('button')
+            .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-10', 'm-2', 'h-10', 'mt-4', 'rounded-full')
+            .mcls('transition-transform', 'duration-200', 'ease-in', 'text-[20px]', 'text-gray-100')
+            .attr('title', 'Loop: Inactive')
+            .innerHtml('\u27F3')
+            .evt('click', this.onReplay.bind(this))
+            .get();
 
         const seekbarTracker = el('div')
             .mcls('tracker', 'bg-gray-400/60', 'w-avail', 'max-h-2', 'min-h-2', 'mt-8', 'rounded-md', 'mx-16')
@@ -409,11 +485,11 @@ export class WindowView {
             .styleAttr({ bottom: '10px', left: '50px' })
             .inner([
                 seekbarTracker,
-                el('div').mcls('flex', 'flex-col', 'self-center').inners(playButton)
+                el('div').mcls('flex', 'self-center').inners(playButton, loopButton)
             ])
             .get();
 
-        return [seekBarThumb, seekbarTracker, playButton, seekbarDOM];
+        return [seekBarThumb, seekbarTracker, playButton, loopButton, seekbarDOM];
     }
 
     onOptionSelected(event: MouseEvent) {
@@ -556,7 +632,10 @@ export class WindowView {
         this.height = height;
 
         const canvasContext = canvas.getContext(contextType) as CanvasRenderingContext2D;
-        return { canvas, canvasContext };
+        return {
+            canvas,
+            canvasContext
+        };
     }
 
     initializeAnalyzerWave() {
@@ -570,7 +649,7 @@ export class WindowView {
         this.bufferLength = analyser.frequencyBinCount;
         this.buffer = new Uint8Array(analyser.frequencyBinCount);
 
-        analyser.getByteTimeDomainData(this.buffer);
+        analyser.getByteTimeDomainData(this.buffer as Uint8Array<ArrayBuffer>);
         this.audioService.connectAudioWorkletNodeTo(analyser);
 
         return analyser;
@@ -594,7 +673,7 @@ export class WindowView {
         this.frequencyBuffer = new Float32Array(analyser.frequencyBinCount);
         this.frequencyIncr = this.setBufferSize();
 
-        analyser.getFloatFrequencyData(this.frequencyBuffer);
+        analyser.getFloatFrequencyData(this.frequencyBuffer as Float32Array<ArrayBuffer>);
         this.audioService.connectAudioWorkletNodeTo(analyser);
 
         return analyser;
@@ -709,10 +788,10 @@ export class WindowView {
             case 'Circle Spike': {
                 this.analyser = this.initializeAnalyzerBar();
                 const value = Object.assign(createOptionsForWaveCircle(this.frequencyIncr, this.currentMode === 'Circle Spike'), {
-                        drawKind: 'eq',
-                        analyser: this.analyser,
-                        buffer: this.frequencyBuffer,
-                    });
+                    drawKind: 'eq',
+                    analyser: this.analyser,
+                    buffer: this.frequencyBuffer,
+                });
                 addOrInsert(this.canvasAction, value);
                 break;
             }

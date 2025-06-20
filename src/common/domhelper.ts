@@ -65,9 +65,9 @@ type Pat = NodePat[] | Pat[];
  * @param pattern Array like structure as a hint for destructuring
  * @returns Array with hierarchy to children of `node` 
  */
-export function des<Pattern>(node: HTMLElement, nodeChildrenPatter: Pat): Pattern {
+export function des<Pattern>(node: HTMLElement, nodeChildrenPattern: Pat): Pattern {
     const pat: any = [];
-    nodeChildrenPatter.forEach((placeholder, index: number) => {
+    nodeChildrenPattern.forEach((placeholder, index: number) => {
         if (node.children.item(index) && placeholder) {
             pat.push(Array.isArray(placeholder) ? 
                 des(node.children.item(index) as HTMLElement, placeholder) : 
@@ -83,16 +83,9 @@ export function des<Pattern>(node: HTMLElement, nodeChildrenPatter: Pat): Patter
  * @param node 
  * @returns 
  */
-export function elId(
-    _id: string,
-): Option<HTMLElement>
-{
-    const dom = document.getElementById(_id);
-    if (dom === null) {
-        return None();
-    }
-
-    return Some(dom);
+export function elId(id: string): Option<HTMLElement> {
+    const dom = document.getElementById(id);
+    return !dom ? None() : Some(dom);
 }
 
 /**
@@ -101,10 +94,7 @@ export function elId(
  * @param node 
  * @returns 
  */
-export function elCls(
-    cls: string,
-): HTMLCollectionOf<Element>
-{
+export function elCls(cls: string): HTMLCollectionOf<Element> {
     return document.getElementsByClassName(cls);
 }
 
@@ -114,10 +104,7 @@ export function elCls(
  * @param node 
  * @returns 
  */
-export function elTags(
-    tag: string,
-): HTMLCollectionOf<Element>
-{
+export function elTags(tag: string): HTMLCollectionOf<Element> {
     return document.getElementsByTagName(tag);
 }
 
@@ -155,16 +142,11 @@ export function elQueryAll(
     return Some(node.querySelectorAll(query));
 }
 
-export function elIds(
-    ..._ids: string[]
-): (Option<HTMLElement>)[] 
-{
-    return _ids.map(_id => elId(_id));
+export function elIds(...ids: string[]): (Option<HTMLElement>)[] {
+    return ids.map(elId);
 }
 
-export function txt(
-    text: string
-): Text {
+export function txt(text: string): Text {
     return document.createTextNode(text);
 }
 
@@ -442,7 +424,7 @@ export function el<T extends HTMLElement>(tag: string | T) {
          * Toggle class
          * @returns Self for transformation
          */
-        mtcls (...cls: string[]) {
+        mtcls(...cls: string[]) {
             cls.forEach(cl => currentWorkingElement.classList.toggle(cl));
             return this;
         },

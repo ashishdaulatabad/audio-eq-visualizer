@@ -16,7 +16,7 @@ export function waveFormation(
     canvasContext: CanvasRenderingContext2D,
     options: WaveOptions & Dim & {
         analyser: AnalyserNode,
-        buffer: Uint8Array,
+        buffer: Uint8Array<ArrayBuffer>,
     }
 ) {
     canvasContext.lineWidth = 2;

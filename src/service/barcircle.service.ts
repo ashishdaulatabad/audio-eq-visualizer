@@ -45,7 +45,7 @@ export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): Ba
 export function barCircleFormation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
     options: BarCircleOptions & {
-        buffer: Float32Array,
+        buffer: Float32Array<ArrayBuffer>,
         analyser: AnalyserNode,
         width: number,
         height: number,
