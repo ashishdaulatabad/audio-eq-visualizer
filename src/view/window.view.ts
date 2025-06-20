@@ -289,12 +289,7 @@ export class WindowView {
         }
 
         if (this.replay) {
-            if (this.sourceBuffer.ended) {
-                this.audioService.setAudioFileChanged(this.sampleRate);
-                this.sourceBuffer.currentTime = 0;
-                this.sourceBuffer.play();
-            }
-            this.sourceBuffer.onended = () => {
+            sourceBuffer.onended = () => {
                 this.audioService.setAudioFileChanged(this.sampleRate);
                 this.sourceBuffer.currentTime = 0;
                 this.sourceBuffer.play();
