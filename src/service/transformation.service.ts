@@ -13,9 +13,9 @@ export function complement(rgb: string) {
     const split = ~parseInt(rgb.split('#')[1], 16);
     const correction = 0x00_FF_FF_FF & split;
     return '#' + [
-        utility.padderString((correction >> 16).toString(16)),
-        utility.padderString(((correction >> 8) & 0xFF).toString(16)),
-        utility.padderString((correction & 0xFF).toString(16))
+        (correction >> 16).toString(16).padStart(2, '0'),
+        ((correction >> 8) & 0xFF).toString(16).padStart(2, '0'),
+        (correction & 0xFF).toString(16).padStart(2, '0')
     ].join('');
 }
 
@@ -69,9 +69,9 @@ export function createRandomParticleSeeding(
     });
 }
 
-const clamp = (value: number, min: number, max: number) => (
-    Math.min(Math.max(value, min), max)
-)
+export function clamp(value: number, min: number, max: number) {
+    return Math.min(Math.max(value, min), max)
+}
 
 export function applyParticleTransformation(
     canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
@@ -94,21 +94,18 @@ export function applyParticleTransformation(
             options.buffer.vy[index],
             options.buffer.ax[index],
             options.buffer.ay[index],
-            timeExceeded ? options.buffer.rd[index] : Math.random()
+            !timeExceeded ? options.buffer.rd[index] : Math.random()
         ];
+
+        // if (timeExceeded) {
         if (options.isSpiral) {
             canvasContext.fillRect(x, y, 1 + (vx > 0 ? 1 : 0), 1 + (vx > 0 ? 1 : 0));
-            // let rand = rd * Math.PI;
-            // ax = 8 * Math.cos(rand);
-            // ay = 8 * Math.sin(rand);
             [ax, ay] = Complex.vec(16, rd * Math.PI).coord();
         } else {
             canvasContext.fillRect(x, y, 1, 1);
-            // let rand = 2 * rd * Math.PI;
-            // ax = 64 * Math.cos(rand);
-            // ay = 64 * Math.sin(rand);
-            [ax, ay] = Complex.vec(64, 2 * rd * Math.PI).coord();
+            [ax, ay] = Complex.vec(8, 2 * rd * Math.PI).coord();
         }
+        // }
 
         vx += ax * timeChange;
         vx = clamp(vx, -20, 20);

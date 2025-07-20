@@ -12,7 +12,7 @@ export default {
     },
 
     timerSec(timeInSeconds: number) {
-        const [min, sec] = [Math.floor(timeInSeconds / 60), Math.floor(timeInSeconds) % 60];
+        const min = Math.floor(timeInSeconds / 60), sec = Math.floor(timeInSeconds) % 60;
         return `${this.padder(min)}:${this.padder(sec)}`
     },
 

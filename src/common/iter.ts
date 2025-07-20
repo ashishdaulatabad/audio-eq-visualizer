@@ -6,34 +6,34 @@ import { None, Option, Some } from "./option";
  * @returns Iterable Wrapper
  */
 export function iter<T>(someContainer: T[] | Set<T>) {
-    return new IterWrapper<T>(someContainer[Symbol.iterator]());
+  return new IterWrapper<T>(someContainer[Symbol.iterator]());
 }
 
 class Range {
-    current: number = 0
-    end: number = 0
-    constructor(start: number, end: number) {
-        this.current = start;
-        this.end = end;
-    }
-    
-    [Symbol.iterator]() {
-        return this;
+  current: number = 0
+  end: number = 0
+  constructor(start: number, end: number) {
+    this.current = start;
+    this.end = end;
+  }
+  
+  [Symbol.iterator]() {
+    return this;
+  }
+
+  next(): IteratorResult<number, any> {
+    if (this.current === this.end) {
+      return { done: true, value: this.current }
     }
 
-    next(): IteratorResult<number, any> {
-        if (this.current === this.end) {
-            return { done: true, value: this.current }
-        }
-
-        const value = this.current;
-        ++this.current;
-        return { value };
-    }
+    const value = this.current;
+    ++this.current;
+    return { value };
+  }
 }
 
 export function wrapIter<T>(wrapper: IterableIterator<T>): IterWrapper<T> {
-    return new IterWrapper(wrapper);
+  return new IterWrapper(wrapper);
 }
 
 /**
@@ -45,153 +45,152 @@ export function wrapIter<T>(wrapper: IterableIterator<T>): IterWrapper<T> {
  * @returns Iterator for end
  */
 export function range(start: number, end?: number) {
-    if (end === undefined) {
-        return new IterWrapper<number>(new Range(0, start));
-    }
+  if (end === undefined) {
+    return new IterWrapper<number>(new Range(0, start));
+  }
 
-    return new IterWrapper<number>(new Range(start, end));
+  return new IterWrapper<number>(new Range(start, end));
 }
 
 class IterWrapper<T> {
-    iterable: IterableIterator<T>;
-    [Symbol.iterator](): IterableIterator<T> {
-        return this.iterable;
-    };
-    constructor(
-        iterable?: IterableIterator<T>
-    ) {
-        this.iterable = iterable as IterableIterator<T>;
-    }
+  iterable: IterableIterator<T>;
+  [Symbol.iterator](): IterableIterator<T> {
+    return this.iterable;
+  }
 
-    next(): IteratorResult<T> {
-        return this.iterable.next();
-    }
+  constructor(iterable?: IterableIterator<T>) {
+    this.iterable = iterable as IterableIterator<T>;
+  }
 
-    /**
-     * Perform operation on each value returned by iterator
-     * @param fn function to perform
-     */
-    forEach(fn: (_: T, index: number) => void) {
+  next(): IteratorResult<T> {
+    return this.iterable.next();
+  }
+
+  /**
+   * Perform operation on each value returned by iterator
+   * @param fn function to perform
+   */
+  forEach(fn: (_: T, index: number) => void) {
+    let index = 0;
+
+    for (const value of this) {
+      fn(value, index);
+      ++index;
+    }
+  }
+
+  /**
+   * Return value from iterator till condition is satisfied or 
+   * till the iterator ends.
+   * @param fn function for validation
+   */
+  takeWhile(fn: (_: T, index?: number) => boolean) {
+    return new IterWrapper<T>(
+      function*(container) {
+        let index = 0;
+        for (const value of container) {
+          if (!fn(value, index)) {
+            break;
+          }
+          index += 1;
+          yield value;
+        }
+      }(this) as IterableIterator<T>
+    );
+  }
+
+  /**
+   * Maps to a different value
+   * @param fn function to perform transform
+   */
+  map<U>(fn: (_: T, index?: number) => U): IterWrapper<U> {
+    return new IterWrapper<U>(
+      function*(container) {
         let index = 0;
 
-        for (const value of this) {
-            fn(value, index);
-            ++index;
+        for (const value of container) {
+          yield fn(value, index);
+          ++index;
         }
+      }(this) as IterableIterator<U>
+    );
+  }
+
+  /**
+   * Reduce to a certain value
+   * @param init Value initialized before commencing reduce function
+   * @param function to perform operation given initial and given
+   * element
+   * @returns Result of the reduce operation
+   */
+  fold<U>(init: U, fn: (prev: U, curr: T, index?: number) => U): U {
+    let initial = init;
+    let index = 0;
+
+    for (const value of this) {
+      initial = fn(initial, value, index);
+      ++index;
     }
 
-    /**
-     * Return value from iterator till condition is satisfied or 
-     * till the iterator ends.
-     * @param fn function for validation
-     */
-    takeWhile(fn: (_: T, index?: number) => boolean) {
-        return new IterWrapper<T>(
-            function*(container) {
-                let index = 0;
-                for (const value of container) {
-                    if (!fn(value, index)) {
-                        break;
-                    }
-                    index += 1;
-                    yield value;
-                }
-            }(this) as IterableIterator<T>
-        );
+    return initial
+  }
+
+  /**
+   * Check if every value generated by iterator satisfies condition
+   * @param fn function for user defined check
+   * @returns boolean value
+   */
+  every(fn: (_: T, index?: number) => boolean): boolean {
+    let index = 0;
+    for (const value of this) {
+      if (!fn(value, index)) {
+        return false
+      }
+      ++index;
     }
+    return true;
+  }
 
-    /**
-     * Maps to a different value
-     * @param fn function to perform transform
-     */
-    map<U>(fn: (_: T, index?: number) => U): IterWrapper<U> {
-        return new IterWrapper<U>(
-            function*(container) {
-                let index = 0;
-
-                for (const value of container) {
-                    yield fn(value, index);
-                    ++index;
-                }
-            }(this) as IterableIterator<U>
-        );
+  /**
+   * Check if at least one value generated by iterator satisfies condition
+   * @param fn function for user defined check
+   * @returns boolean value
+   */
+  some(fn: (_: T, index?: number) => boolean): boolean {
+    let index = 0;
+    for (const value of this) {
+      if (fn(value, index)) {
+        return true
+      }
+      ++index;
     }
+    return false;
+  }
 
-    /**
-     * Reduce to a certain value
-     * @param init Value initialized before commencing reduce function
-     * @param function to perform operation given initial and given
-     * element
-     * @returns Result of the reduce operation
-     */
-    fold<U>(init: U, fn: (prev: U, curr: T, index?: number) => U): U {
-        let initial = init;
+  /**
+   * Filter values and ignore values that does not satisfy condition
+   * @param fn function to perform transform
+   */
+  filter(fn: (_: T, index?: number) => boolean): IterWrapper<T> {
+    return new IterWrapper<T>(
+      function*(container) {
         let index = 0;
-
-        for (const value of this) {
-            initial = fn(initial, value, index);
-            ++index;
+        for (const value of container) {
+          if (fn(value, index)) {
+            yield value;
+          }
+          ++index;
         }
+      }(this) as IterableIterator<T>
+    );
+  }
 
-        return initial
-    }
-
-    /**
-     * Check if every value generated by iterator satisfies condition
-     * @param fn function for user defined check
-     * @returns boolean value
-     */
-    every(fn: (_: T, index?: number) => boolean): boolean {
-        let index = 0;
-        for (const value of this) {
-            if (!fn(value, index)) {
-                return false
-            }
-            ++index;
-        }
-        return true;
-    }
-
-    /**
-     * Check if at least one value generated by iterator satisfies condition
-     * @param fn function for user defined check
-     * @returns boolean value
-     */
-    some(fn: (_: T, index?: number) => boolean): boolean {
-        let index = 0;
-        for (const value of this) {
-            if (fn(value, index)) {
-                return true
-            }
-            ++index;
-        }
-        return false;
-    }
-
-    /**
-     * Filter values and ignore values that does not satisfy condition
-     * @param fn function to perform transform
-     */
-    filter(fn: (_: T, index?: number) => boolean): IterWrapper<T> {
-        return new IterWrapper<T>(
-            function*(container) {
-                let index = 0;
-                for (const value of container) {
-                    if (fn(value, index)) {
-                        yield value;
-                    }
-                    ++index;
-                }
-            }(this) as IterableIterator<T>
-        );
-    }
-
-    /**
-     * @returns Array generated by collecting all values from iterator
-     */
-    collect(): Array<T> {
-        return [...this.iterable];
-    }
+  /**
+   * @returns Array generated by collecting all values from iterator
+   */
+  collect(): Array<T> {
+    return [...this.iterable];
+  }
 }
 
 /**
@@ -210,79 +209,78 @@ class IterWrapper<T> {
  * @returns wrapper for the Iterator
  */
 export function nodeIter<YieldType = HTMLElement | Node>(
-    value: YieldType,
-    strideFn: (_: YieldType) => YieldType,
-    incl: boolean = false
+  value: YieldType,
+  strideFn: (_: YieldType) => YieldType,
+  incl: boolean = false
 ) {
-    return new NodeIterWrapper<YieldType>(
-        value,
-        strideFn,
-        incl,
-        (par) => par !== null
-    );
+  return new NodeIterWrapper<YieldType>(
+    value,
+    strideFn,
+    incl,
+    (par) => par !== null
+  );
 }
 
-class NodeIterWrapper<YieldType> 
-    extends IterWrapper<YieldType> 
-    implements Iterable<YieldType>
+class NodeIterWrapper<T> extends IterWrapper<T> 
+  implements Iterable<T>
 {
-    until: (_: YieldType) => boolean;
-    constructor(
-        private currNode: YieldType,
-        private stride: (_: YieldType) => YieldType,
-        private inclusive: boolean = false,
-        until: (_: YieldType) => boolean
-    ) {
-        super(
-            function*() {
-                while (until(currNode)) {
-                    const value = currNode;
-                    currNode = stride(currNode);
-                    yield value;
-                }
-                if (inclusive) {
-                    yield currNode;
-                }
-            }() as IterableIterator<YieldType>
-        );
-
-        this.until = until;
-    }
-
-    private genIterator() {
-        return function*(container) {
-            while (container.until(container.currNode)) {
-                const value = container.currNode;
-                container.currNode = container.stride(container.currNode);
-                yield value;
-            }
-            if (container.inclusive) {
-                yield container.currNode;
-            }
-        }(this) as IterableIterator<YieldType>
-    }
-
-    till(fn: (_: YieldType) => boolean) {
-        this.until = fn;
-        super[Symbol.iterator] = () => this.genIterator();
-        return this;
-    }
-
-    /**
-     * Returns the last element returned from the iterator
-     * @returns The last element from the iterator
-     */
-    last(): Option<YieldType> {
-        let value = null;
-        let fetchedOnce = false;
-        for (const i of this) {
-            value = i;
-            fetchedOnce = true;
+  until: (_: T) => boolean;
+  constructor(
+    private currNode: T,
+    private stride: (_: T) => T,
+    private inclusive: boolean = false,
+    until: (_: T) => boolean
+  ) {
+    super(
+      function*() {
+        while (until(currNode)) {
+          const value = currNode;
+          currNode = stride(currNode);
+          yield value;
         }
-        if (fetchedOnce) {
-            return Some(value as YieldType);
-        } else {
-            return None();
+        if (inclusive) {
+          yield currNode;
         }
+      }() as IterableIterator<T>
+    );
+
+    this.until = until;
+  }
+
+  private genIterator() {
+    return function*(container) {
+      while (container.until(container.currNode)) {
+        const value = container.currNode;
+        container.currNode = container.stride(container.currNode);
+        yield value;
+      }
+      if (container.inclusive) {
+        yield container.currNode;
+      }
+    }(this) as IterableIterator<T>
+  }
+
+  till(fn: (_: T) => boolean) {
+    this.until = fn;
+    super[Symbol.iterator] = () => this.genIterator();
+    return this;
+  }
+
+  /**
+   * Returns the last element returned from the iterator
+   * @returns The last element from the iterator
+   */
+  last(): Option<T> {
+    let value = null;
+    let fetchedOnce = false;
+    for (const i of this) {
+      value = i;
+      fetchedOnce = true;
     }
+    if (fetchedOnce) {
+      return Some(value as T);
+    } else {
+      return None();
+    }
+  }
 }

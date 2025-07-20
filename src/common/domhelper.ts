@@ -506,14 +506,9 @@ export function el<T extends HTMLElement>(tag: string | T) {
         nextTo(someSibling: Node) {
             if (someSibling.parentNode) {
                 if (someSibling.nextSibling) {
-                    someSibling.parentNode.insertBefore(
-                        currentWorkingElement,
-                        someSibling.nextSibling
-                    );
+                    someSibling.parentNode.insertBefore(currentWorkingElement, someSibling.nextSibling);
                 } else {
-                    someSibling.parentNode.appendChild(
-                        currentWorkingElement
-                    );
+                    someSibling.parentNode.appendChild(currentWorkingElement);
                 }
             }
             return this;
@@ -526,10 +521,7 @@ export function el<T extends HTMLElement>(tag: string | T) {
          */
         before(someSibling: Node) {
             if (someSibling.parentNode) {
-                someSibling.parentNode.insertBefore(
-                    currentWorkingElement,
-                    someSibling
-                );
+                someSibling.parentNode.insertBefore(currentWorkingElement, someSibling);
             }
             return this;
         },
@@ -860,10 +852,7 @@ export function elf<T extends HTMLElement>(tag: string | T) {
          */
         replaceWith(someChild: Node) {
             if (someChild.parentNode) {
-                someChild.parentNode.replaceChild(
-                    currentWorkingElement,
-                    someChild
-                );
+                someChild.parentNode.replaceChild(currentWorkingElement, someChild);
             }
             return this;
         },
@@ -885,14 +874,9 @@ export function elf<T extends HTMLElement>(tag: string | T) {
         nextTo(someSibling: Node) {
             if (someSibling.parentNode) {
                 if (someSibling.nextSibling) {
-                    someSibling.parentNode.insertBefore(
-                        currentWorkingElement,
-                        someSibling.nextSibling
-                    );
+                    someSibling.parentNode.insertBefore(currentWorkingElement, someSibling.nextSibling);
                 } else {
-                    someSibling.parentNode.appendChild(
-                        currentWorkingElement
-                    );
+                    someSibling.parentNode.appendChild(currentWorkingElement);
                 }
             }
             return this;
