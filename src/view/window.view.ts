@@ -1,7 +1,7 @@
 import { el } from '../common/domhelper';
 import { GlobalAudioService } from '../service/global.service';
 import { Subscriber } from '../common/subscriber';
-import utility from '../common/utility';
+import {timerSec} from '../common/utility';
 import { applyTransformation, createRandomParticleSeeding } from '../service/transformation.service';
 import { createOptionsForBar } from '../service/bar.service';
 import { createBarCircleEq } from '../service/barcircle.service';
@@ -413,7 +413,7 @@ export class WindowView {
 
       const time = this.sourceBuffer.currentTime;
 
-      canvasContext.fillText(utility.timerSec(time), 30, timerPos + this.fontSize + 10);
+      canvasContext.fillText(timerSec(time), 30, timerPos + this.fontSize + 10);
       canvasContext.fillStyle = this.backColor;
     }
 
