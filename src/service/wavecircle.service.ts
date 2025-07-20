@@ -71,6 +71,7 @@ export function waveCircleFormation(
   const anglePerBar = (2 * Math.PI) / (bandRanges.length * waveCounts);
   let theta = angleInit;
 
+  // TODO: Using normal maths instead of complex numbers for performance.
   let angle = Complex.vec(height / 4, theta);
   const change = Complex.unit(anglePerBar);
   let unitAng = Complex.unit(theta);
