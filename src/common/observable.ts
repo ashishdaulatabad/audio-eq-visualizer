@@ -3,7 +3,10 @@ export class Observable<T> {
   private subscriptionActionList: Array<(_: T) => void> = [];
   constructor(private key: string) {}
 
-  static createSubscription<T>(key: string, subscriptionArray: Array<(_: T) => void>) {
+  static createSubscription<T>(
+    key: string,
+    subscriptionArray: Array<(_: T) => void>
+  ) {
     const newObservable = new Observable<T>(key);
     newObservable.subscriptionActionList = subscriptionArray;
     return newObservable;

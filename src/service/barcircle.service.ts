@@ -1,5 +1,5 @@
 import { Complex } from "../common/complex";
-import utility from "../common/utility";
+import {linearToPower} from "../common/utility";
 import { withDocumentDim, Dim } from "./util.service";
 
 export type BarCircleOptions = {
@@ -17,8 +17,6 @@ export type BarCircleOptions = {
   mirrored?: boolean,
   angularVelocity: number,
 }
-
-const {linearToPower} = utility;
 
 export function createBarCircleEq(frequencyIncr: number, mirrored?: boolean): BarCircleOptions & Dim {
   return withDocumentDim<BarCircleOptions>({

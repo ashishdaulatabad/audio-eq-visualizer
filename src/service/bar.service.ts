@@ -1,4 +1,4 @@
-import utility from "../common/utility";
+import {linearToPower} from "../common/utility";
 import { withDocumentDim, Dim } from "./util.service";
 
 const color = (magnitude: number) => {
@@ -107,7 +107,7 @@ export function barFormation(
         const v = buffer[Math.floor(i)] + 128.0;
 
         if (v > 0) {
-          const y = base - utility.linearToPower(v, 4, 256, options.volumeScaling) * options.barFactor;
+          const y = base - linearToPower(v, 4, 256, options.volumeScaling) * options.barFactor;
           drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, y);
       }
 
@@ -127,7 +127,7 @@ export function barFormation(
         const v = buffer[Math.floor(i)] + 128.0;
 
         if (v > 0) {
-          const y = utility.linearToPower(v, 4, 256, options.volumeScaling) * (options.barFactor / 1.65);
+          const y = linearToPower(v, 4, 256, options.volumeScaling) * (options.barFactor / 1.65);
           canvasContext.fillStyle = tempFill;
           drawLineForBar(options.lineType, canvasContext, x, base, canvasContext.lineWidth, base - y);
           canvasContext.fillStyle = tempFill + "90";

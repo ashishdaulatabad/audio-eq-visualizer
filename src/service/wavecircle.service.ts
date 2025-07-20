@@ -1,5 +1,5 @@
 import { Complex } from "../common/complex";
-import utility from "../common/utility";
+import {linearToPower} from "../common/utility";
 import { withDocumentDim, Dim } from "./util.service";
 
 export type WaveCircleOptions = {
@@ -91,7 +91,7 @@ export function waveCircleFormation(
     for (; perBandValue < waveCounts; ++perBandValue, i += indexIncrement) {
       const v = buffer[Math.ceil(i)] + 128.0;
 
-      const y = utility.linearToPower(v, 4, 256, volumeScaling) * barCircleFactor;
+      const y = linearToPower(v, 4, 256, volumeScaling) * barCircleFactor;
       // Todo: Make naive instead of complex array.
       const normal = unitAng.muln(y);
       const [xc, yc] = angle.coord();
@@ -152,7 +152,7 @@ export function circleSpikeFormation(
 
     for (; perBandValue < options.waveCounts; ++perBandValue, i += indexIncrement) {
       const v = options.buffer[Math.ceil(i)] + 128.0;
-      const l = utility.linearToPower(v, 4, 256, options.volumeScaling)
+      const l = linearToPower(v, 4, 256, options.volumeScaling)
       values[arrayIndex++] = l * options.barCircleFactor;
     }
   }
@@ -166,7 +166,7 @@ export function circleSpikeFormation(
       .reduce((prev, curr) => prev + curr, 0) / (2 * options.waveCounts);
   
   const radius = Math.min(options.width, options.height) / 4;
-  let angle = Complex.vec(radius + utility.linearToPower(averageBass, 2, 256, 1), theta),
+  let angle = Complex.vec(radius + linearToPower(averageBass, 2, 256, 1), theta),
       change = Complex.unit(anglePerBar),
       unitAng = Complex.unit(theta);
 

@@ -1,6 +1,7 @@
 import { el } from "../common/domhelper";
 import { Subscriber } from "../common/subscriber";
 
+// TODO: Define custom elements
 export class CanvasThemeSelectorView {
   mainDOM: HTMLElement;
   paletteElement: HTMLElement;
@@ -23,6 +24,7 @@ export class CanvasThemeSelectorView {
   ];
 
   constructor(private subscriber: Subscriber) {
+    // super();
     [this.mainDOM, this.paletteElement] = this.constructPalette();
     this.subscriber.createSubscription('palette');
   }
@@ -49,7 +51,8 @@ export class CanvasThemeSelectorView {
     const styleDom = this.constructTitle()
     const paletteColors = this.constructPaletteColors();
     const mainDOM = el('div')
-      .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'min-w-36', 'top-10', 'right-10', 'rounded-[3px]', 'p-2', 'text-center')
+      .mcls('bg-gray-600/30', 'backdrop-blur-[2px]', 'min-w-36', 'top-10')
+      .mcls('right-10', 'rounded-[3px]', 'p-2', 'text-center')
       .mcls('max-h-72', 'overflow-hidden', 'flex', 'flex-col', 'shadow-md')
       .inners(styleDom, paletteColors)
       .get();
@@ -66,7 +69,9 @@ export class CanvasThemeSelectorView {
 
   constructPaletteDOM(rgb: [string, string]) {
     return el('div')
-      .mcls('min-h-12', 'w-avail', 'h-8', 'rounded-sm', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'cursor-pointer')
+      .mcls('min-h-12', 'w-avail', 'h-8', 'rounded-sm', 'transition-all')
+      .mcls('duration-300', 'ease-in-out', 'hover:bg-gray-100/30')
+      .mcls('cursor-pointer')
       .inners(
         el('span')
           .mcls('w-8', 'h-8', 'p-4', 'relative', 'top-2', 'inline-block')
@@ -95,11 +100,13 @@ export class CanvasThemeSelectorView {
 
   constructGradientPaletteDOM(rgb: [string, string]) {
     return el('div')
-      .mcls('min-h-12', 'w-avail', 'h-8', 'rounded-sm', 'transition-all', 'duration-300', 'ease-in-out', 'hover:bg-gray-100/30', 'cursor-pointer')
+      .mcls('min-h-12', 'w-avail', 'h-8', 'rounded-sm', 'transition-all')
+      .mcls('duration-300', 'ease-in-out', 'hover:bg-gray-100/30')
+      .mcls( 'cursor-pointer')
       .inners(
         el('span')
           .mcls('w-8', 'h-8', 'p-4', 'relative', 'top-2', 'inline-block')
-          .styleAttr({ backgroundColor: `linearGradient(${rgb[0]}, ${rgb[1]})` })
+          .styleAttr({ backgroundColor: `linearGradient(${rgb[0]}, ${rgb[1]})`})
           .get(),
         el('span')
           .mcls('min-w-8', 'min-h-8', 'p-4', 'relative', 'top-2', 'inline-block')
@@ -128,10 +135,14 @@ export class CanvasThemeSelectorView {
     const title = el('span')
       .mcls('text-[18px]', 'font-serif', 'text-gray-100', 'block', 'items-center', 'flex')
       .inner([
-        el('span').mcls('relative', 'top-[2px]', 'block', 'self-center', 'w-avail', 'font-bold').innerText('Color Theme'),
+        el('span')
+          .mcls('relative', 'top-[2px]', 'block', 'self-center')
+          .mcls('w-avail', 'font-bold')
+          .innerText('Color Theme'),
         el('button')
-          .mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-700', 'text-gray-100', 'border-[0]', 'ml-4', 'self-end')
-          .mcls('transition-transform', 'duration-200', 'ease-in-out')
+          .mcls('min-h-8', 'min-w-8', 'rounded-[1rem]', 'bg-gray-700')
+          .mcls('transition-transform', 'duration-200', 'ease-in-out', 'ml-4')
+          .mcls('text-gray-100', 'border-[0]', 'self-end')
           .innerHtml('\u25B2')
       ])
       .get();

@@ -1,33 +1,20 @@
-export default {
-    /**
-     * @brief Pad for timer
-     * @param number
-     * @returns
-     */
-    padder(number: number) {
-        return number < 10 ? '0' + number : number.toString()
-    },
-    padderString(number: string) {
-        return number.length <= 1 ? '0' + number : number
-    },
+export function timerSec(timeInSeconds: number) {
+  const m = Math.floor(timeInSeconds / 60)
+  const s = Math.floor(timeInSeconds) % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
 
-    timerSec(timeInSeconds: number) {
-        const min = Math.floor(timeInSeconds / 60), sec = Math.floor(timeInSeconds) % 60;
-        return `${this.padder(min)}:${this.padder(sec)}`
-    },
+export function linearToCubic(number: number, peak = 256, factor = 1): number {
+  const real = number / (peak * factor);
+  return real * real * real * peak;
+}
 
-    linearToCubic(number: number, peak: number = 256, factor: number = 1): number {
-        const real = number / (peak * factor);
-        return real * real * real * peak;
-    },
+export function linearToPower(number: number, power: number, peak = 256, factor = 1): number {
+  const real = number / (peak * factor);
+  return Math.pow(real, power) * peak;
+}
 
-    linearToPower(number: number, power: number, peak: number = 256, factor: number = 1): number {
-        const real = number / (peak * factor);
-        return Math.pow(real, power) * peak;
-    },
-
-    linearToSquare(number: number, peak: number = 256, factor: number = 1): number {
-        const real = number / (peak * factor);
-        return real * real * peak;
-    }
+export function linearToSquare(number: number, peak = 256, factor = 1): number {
+  const real = number / (peak * factor);
+  return real * real * peak;
 }
