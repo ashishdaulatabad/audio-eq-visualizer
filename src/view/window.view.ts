@@ -191,7 +191,7 @@ export class WindowView {
 
   createGithubButton() {
     return el('button')
-      .mcls('bg-gray-900', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-gray-800')
+      .mcls('bg-gray-900', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-gray-700', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-gray-800')
       .innerHtml('GitHub')
       .evt('click', WindowView.openGithub)
       .get();
