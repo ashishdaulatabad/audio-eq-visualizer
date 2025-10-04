@@ -189,6 +189,21 @@ export class WindowView {
       .get();
   }
 
+  createGithubButton() {
+    return el('button')
+      .mcls('bg-gray-900', 'block', 'w-avail', 'text-gray-100', 'p-2', 'pb-1', 'hover:bg-blue-600', 'transition-all', 'ease-in-out', 'duration-300', 'rounded-sm', 'active:bg-gray-800')
+      .innerHtml('GitHub')
+      .evt('click', WindowView.openGithub)
+      .get();
+  }
+
+  static openGithub() {
+    window.open(
+      'https://github.com/ashishdaulatabad/audio-eq-visualizer', 
+      '_blank'
+    );
+  }
+
   selectMediaFile(_: MouseEvent) {
     const input = el('input')
       .inputType('file')
@@ -284,6 +299,7 @@ export class WindowView {
       this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
       this.setSliderContainer('Speed Factor', this.setSlider('speed')),
       this.createAudioPermissionButton(),
+      this.createGithubButton(),
       this.createFileSelectionButton(),
     ];
   }
