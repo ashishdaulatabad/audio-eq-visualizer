@@ -1,6 +1,6 @@
 "use strict";
 
-import init, { process_ola } from "wasm-fft";
+import init, { process_ola, process_ola_simd } from "wasm-fft";
 
 function genHannWindow(length) {
     const win = new Float32Array(length);
@@ -261,15 +261,25 @@ class PhaseVocoderProcessor extends OLAProcessor {
                 const output = outputs[i][j];
 
                 if (this.processed) {
-                    const out = process_ola(
+                    // const out = process_ola(
+                    //     input,
+                    //     this.hannWindow,
+                    //     this.lookUp,
+                    //     pitchFactor,
+                    //     this.timeCursor,
+                    //     this.freqIncr,
+                    //     frequency,
+                    //     multiplier
+                    // );
+                    const out = process_ola_simd(
                         input,
                         this.hannWindow,
-                        this.lookUp,
                         pitchFactor,
                         this.timeCursor,
                         this.freqIncr,
                         frequency,
-                        multiplier
+                        multiplier,
+                        this.fftSize
                     );
                     output.set(out);
                 } else {

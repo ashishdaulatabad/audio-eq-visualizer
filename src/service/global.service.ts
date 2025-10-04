@@ -18,30 +18,32 @@ export class GlobalAudioService {
   audioWorkletNode: AudioWorkletNode;
 
   constructor(private subscriber: Subscriber, private wasmModule: ArrayBuffer) {
-    this.contextObservable$ = this.subscriber.createSubscription<void>('contextcreated');
+    this.contextObservable$ = this.subscriber.createSubscription('contextcreated');
     this.fileObservable$ = this.subscriber.createSubscription('musicchanged');
   }
 
   createWorkletNode() {
-    this.useAudioContext().audioWorklet.addModule('scripts/phase-vocoder.service.js').then(_ => {
-      this.audioWorkletNode = new AudioWorkletNode(
-        this.useAudioContext(), 
-        'phase-vocoder-processor'
-      );
-      this.audioWorkletNode.port.postMessage({ data: this.wasmModule });
+    this.useAudioContext().audioWorklet
+      .addModule('scripts/phase-vocoder.service.js')
+      .then(_ => {
+        this.audioWorkletNode = new AudioWorkletNode(
+          this.useAudioContext(), 
+          'phase-vocoder-processor'
+        );
+        this.audioWorkletNode.port.postMessage({ data: this.wasmModule });
 
-      this.audioWorkletNode.port.onmessage = (event) => {
-        if (event.data.wasm_init) {
-          this.initialized = true;
-          this.contextObservable$.fire();
+        this.audioWorkletNode.port.onmessage = (event) => {
+          if (event.data.wasm_init) {
+            this.initialized = true;
+            this.contextObservable$.fire();
+          }
         }
-      }
 
-      this.mainGain.connect(this.audioWorkletNode);
-      this.audioWorkletNode.connect(this.audioContext.destination);
-    }).catch(err => {
-      console.error(err);
-    });
+        this.mainGain.connect(this.audioWorkletNode);
+        this.audioWorkletNode.connect(this.audioContext.destination);
+      }).catch(err => {
+        console.error(err);
+      });
   }
 
   setAudioFileChanged(sampleRate: number) {

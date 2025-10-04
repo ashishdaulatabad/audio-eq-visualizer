@@ -2,12 +2,23 @@ import { el } from '../common/domhelper';
 import { GlobalAudioService } from '../service/global.service';
 import { Subscriber } from '../common/subscriber';
 import {timerSec} from '../common/utility';
-import { applyTransformation, createRandomParticleSeeding } from '../service/transformation.service';
+import {
+  applyTransformation,
+  createRandomParticleSeeding
+} from '../service/transformation.service';
 import { createOptionsForBar } from '../service/bar.service';
 import { createBarCircleEq } from '../service/barcircle.service';
 import { createOptionsForWaveCircle } from '../service/wavecircle.service';
 import { createOptionsForWave } from '../service/wave.service';
-import { ChromeAbbr, createBufferForChromaticAbberation } from '../service/chrome.service';
+import {
+  ChromeAbbr,
+  createBufferForChromaticAbberation
+} from '../service/chrome.service';
+
+export type TupleRep<T, N extends number, Acc extends T[] = []> = 
+  Acc['length'] extends N ? 
+  Acc : 
+  TupleRep<T, N, [...Acc, T]>;
 
 function createPanelSection(...children: HTMLElement[]) {
   return el('div')
@@ -113,12 +124,22 @@ export class WindowView {
     private audioService: GlobalAudioService,
     private subscriber: Subscriber,
 ) {
-    const [seekbarThumb, seekbarTracker, playButton, loopButton, seekbarDOM] = this.constructSeekbar();
+    const [
+      seekbarThumb,
+      seekbarTracker,
+      playButton,
+      loopButton,
+      seekbarDOM
+    ] = this.constructSeekbar();
+    const {
+      canvas,
+      canvasContext
+    } = this.buildCanvas();
+
     this.seekBarThumb = seekbarThumb
     this.seekbarTracker = seekbarTracker;
     this.playButton = playButton;
     this.replayButton = loopButton;
-    const { canvas, canvasContext } = this.buildCanvas();
     this.canvas = canvas;
     this.canvasContext = canvasContext;
 
@@ -133,7 +154,10 @@ export class WindowView {
 
     this.channelData = createBufferForChromaticAbberation(this.width, this.height);
     this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
-    this.offContext = this.offscreenCanvas.getContext('2d', { willReadFrequently: true }) as OffscreenCanvasRenderingContext2D;
+    this.offContext = this.offscreenCanvas.getContext(
+      '2d', 
+      {willReadFrequently: true}
+    ) as OffscreenCanvasRenderingContext2D;
 
     this.subscriber.subscribeToEvent('palette', (data: [string, string]) => {
       [this.backColor, this.textColor] = data;
@@ -166,7 +190,10 @@ export class WindowView {
   }
 
   selectMediaFile(_: MouseEvent) {
-    const input = el('input').inputType('file').attr('accept', 'audio/*').get();
+    const input = el('input')
+      .inputType('file')
+      .attr('accept', 'audio/*')
+      .get();
     input.onchange = (event: any) => this.setSourceFile(event.target.files[0]);
     input.click();
   }
@@ -184,7 +211,10 @@ export class WindowView {
       return;
     }
 
-    [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(file, { playbackRate: 1 });
+    [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(
+      file, 
+      {playbackRate: 1}
+    );
 
     const fileSplit = file.name.split('.');
     fileSplit.pop();
@@ -208,7 +238,7 @@ export class WindowView {
   }
 
   resetCanvasType(contextType: string) {
-    const { canvas, canvasContext } = this.buildCanvas(contextType);
+    const {canvas, canvasContext} = this.buildCanvas(contextType);
     this.mainDOM.replaceChild(canvas, this.canvas);
     this.canvas = canvas;
     this.canvasContext = canvasContext;
@@ -273,12 +303,16 @@ export class WindowView {
     let sourceBuffer: HTMLAudioElement;
     if (file instanceof File) {
       sourceBuffer = new Audio(URL.createObjectURL(file));
-      sourceBuffer.onloadedmetadata = () => this.totalTimer = sourceBuffer.duration;
+      sourceBuffer.onloadedmetadata = () => (
+        this.totalTimer = sourceBuffer.duration
+      );
     } else {
       sourceBuffer = file;
     }
 
-    const bufferSourceNode = this.audioService.useAudioContext().createMediaElementSource(sourceBuffer);
+    const bufferSourceNode = this.audioService
+      .useAudioContext()
+      .createMediaElementSource(sourceBuffer);
     this.audioService.makeConnection(bufferSourceNode);
 
     this.offsetTimer = 0;
@@ -428,7 +462,10 @@ export class WindowView {
   }
 
   initializeAudio(...dom: HTMLElement[]) {
-    return el('div').mcls('eq', 'relative').inners(...dom).get<HTMLDivElement>();
+    return el('div')
+      .mcls('eq', 'relative')
+      .inners(...dom)
+      .get<HTMLDivElement>();
   }
 
   moveSeekbarClick(evt: MouseEvent) {
@@ -443,18 +480,20 @@ export class WindowView {
     this.requestSeekbarAnimation();
   }
 
-  constructSeekbar(): [HTMLElement, HTMLElement, HTMLElement, HTMLElement, HTMLElement] {
+  constructSeekbar(): TupleRep<HTMLElement, 5> {
     const width = document.documentElement.clientWidth;
     this.seekbarLength = width - 100 - 32;
 
     const seekBarThumb = el('span')
-      .mcls('seekbar-thumb', 'block', 'relative', 'bg-gray-100', 'rounded-[8px]', 'w-2', 'h-2', 'min-w-2', 'min-h-2', 'self-center')
-      .mcls('transition-all', 'duration-[40ms]')
+      .mcls('seekbar-thumb', 'block', 'relative', 'bg-gray-100')
+      .mcls('transition-all', 'duration-[40ms]', 'rounded-[8px]')
+      .mcls('w-2', 'h-2', 'min-w-2', 'min-h-2', 'self-center')
       .get();
 
     const playButton = el('button')
-      .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-10', 'm-2', 'h-10', 'mt-4', 'rounded-full')
-      .mcls('transition-transform', 'duration-200', 'ease-in', 'text-[20px]', 'text-gray-100')
+      .mcls('bg-gray-600/80', 'hover:bg-gray-500', 'w-10', 'm-2', 'h-10')
+      .mcls('transition-transform', 'duration-200', 'ease-in', 'text-[20px]')
+      .mcls('text-gray-100', 'mt-4', 'rounded-full')
       .innerHtml('\u25B6')
       .evt('click', this.onPlayerPausedOrResumed.bind(this))
       .get();
@@ -475,12 +514,14 @@ export class WindowView {
       .get();
 
     const seekbarDOM = el('div')
-      .mcls('seekbar', 'absolute', 'min-h-28', 'rounded-[4rem]', 'bg-gray-700/40', 'flex', 'self-center', 'align-center')
-      .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow', 'duration-100', 'hover:shadow-lg', 'flex', 'flex-col')
+      .mcls('seekbar', 'absolute', 'min-h-28', 'rounded-[4rem]')
+      .mcls('bg-gray-700/40', 'flex', 'self-center', 'align-center')
+      .mcls('backdrop-blur-[5px]', 'shadow-md', 'transition-shadow')
+      .mcls('duration-100', 'hover:shadow-lg', 'flex', 'flex-col')
       .styleAttr({ bottom: '10px', left: '50px' })
       .inner([
-          seekbarTracker,
-          el('div').mcls('flex', 'self-center').inners(playButton, loopButton)
+        seekbarTracker,
+        el('div').mcls('flex', 'self-center').inners(playButton, loopButton)
       ])
       .get();
 
@@ -618,7 +659,7 @@ export class WindowView {
     this.height = height;
   }
 
-  buildCanvas(contextType: string = '2d'): {
+  buildCanvas(ctxId = '2d'): {
     canvas: HTMLCanvasElement,
     canvasContext: CanvasRenderingContext2D
   } {
@@ -634,7 +675,7 @@ export class WindowView {
     this.width = width;
     this.height = height;
 
-    const canvasContext = canvas.getContext(contextType) as CanvasRenderingContext2D;
+    const canvasContext = canvas.getContext(ctxId) as CanvasRenderingContext2D;
     return {
       canvas,
       canvasContext
@@ -677,7 +718,9 @@ export class WindowView {
     this.frequencyBuffer = new Float32Array(analyser.frequencyBinCount);
     this.frequencyIncr = this.setBufferSize();
 
-    analyser.getFloatFrequencyData(this.frequencyBuffer as Float32Array<ArrayBuffer>);
+    analyser.getFloatFrequencyData(
+      this.frequencyBuffer as Float32Array<ArrayBuffer>
+    );
     this.audioService.connectAudioWorkletNodeTo(analyser);
 
     return analyser;
@@ -685,10 +728,13 @@ export class WindowView {
 
   setFps() {
     const currentTimer = performance.now();
+
     if (currentTimer - this.frameTimingDelay > 200) {
-      el(this.fps).innerHtml(`${Math.round(1000 / (currentTimer - this.prevTimer))} FPS`);
+      el(this.fps)
+        .innerHtml(`${Math.round(1000 / (currentTimer - this.prevTimer))} FPS`);
       this.frameTimingDelay = currentTimer;
     }
+
     this.prevTimer = currentTimer;
   }
 
@@ -769,14 +815,17 @@ export class WindowView {
       case 'Bar':
       case 'Bar Mirrored': {
         this.analyser = this.initializeAnalyzerBar();
-        const value = Object.assign(createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'), {
-          isReflective: true,
-          drawKind: 'eq',
-          analyser: this.analyser,
-          buffer: this.frequencyBuffer,
-          width: this.width,
-          height: this.height,
-        });
+        const value = Object.assign(
+          createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'), 
+          {
+            isReflective: true,
+            drawKind: 'eq',
+            analyser: this.analyser,
+            buffer: this.frequencyBuffer,
+            width: this.width,
+            height: this.height,
+          }
+        );
         addOrInsert(this.canvasAction, value);
         break;
       }

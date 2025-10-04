@@ -94,7 +94,11 @@ export class CanvasThemeSelectorView {
       target = target.parentElement as HTMLElement;
     }
 
-    const data = [target.getAttribute('data-back-color') as string, target.getAttribute('data-fore-color') as string, true];
+    const data = [
+      target.getAttribute('data-back-color') as string,
+      target.getAttribute('data-fore-color') as string,
+      true
+    ];
     this.subscriber.fire('palette', data);
   }
 
