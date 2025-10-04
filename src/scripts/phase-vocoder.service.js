@@ -28,6 +28,7 @@ const WEBAUDIO_BLOCK_SIZE = 128;
 const processSize = 2048;
 const frequency = new Float32Array([50, 200, 1000, 5000, 10000]);
 const multiplier = new Float32Array([1, 1, 1, 1, 1]);
+const BUFFER_RESET_THRESHOLD = 128;
 
 /// Credits to: https://github.com/olvb/phaze
 class OLAProcessor extends AudioWorkletProcessor {
@@ -43,6 +44,8 @@ class OLAProcessor extends AudioWorkletProcessor {
         this.nbOverlaps = this.blockSize / processSize;
         this.processOverlap = processSize / WEBAUDIO_BLOCK_SIZE;
         this.processCounter = 0;
+        this.gainFactor = 1;
+        this.bufferResetCounter = 0;
 
         // pre-allocate input buffers (will be reallocated if needed)
         this.inputBuffers = new Array(this.nbInputs);
@@ -61,7 +64,19 @@ class OLAProcessor extends AudioWorkletProcessor {
         }
     }
 
-    reallocateChannelsIfNeeded(inputs, outputs) {
+    reallocateChannelsIfNeeded(inputs, outputs, force = false) {
+        if (force) {
+            for (let i = 0; i < this.nbInputs; ++i) {
+                let nbChannels = inputs[i].length;
+                this.allocateInputChannels(i, nbChannels);
+            }
+
+            for (let i = 0; i < this.nbOutputs; ++i) {
+                let nbChannels = outputs[i].length;
+                this.allocateOutputChannels(i, nbChannels);
+            }
+            return;
+        }
         for (let i = 0; i < this.nbInputs; ++i) {
             let nbChannels = inputs[i].length;
             if (nbChannels != this.inputBuffers[i].length) {
@@ -173,7 +188,7 @@ class OLAProcessor extends AudioWorkletProcessor {
         for (let i = 0; i < this.nbOutputs; ++i) {
             for (let j = 0; j < this.outputBuffers[i].length; ++j) {
                 for (let k = 0; k < this.blockSize; ++k) {
-                    this.outputBuffers[i][j][k] += this.outputBuffersToRetrieve[i][j][k] / this.nbOverlaps;
+                    this.outputBuffers[i][j][k] += (this.outputBuffersToRetrieve[i][j][k] / this.nbOverlaps) * this.gainFactor;
                 }
             }
         }
@@ -181,15 +196,17 @@ class OLAProcessor extends AudioWorkletProcessor {
 
     process(inputs, outputs, params) {
         this.reallocateChannelsIfNeeded(inputs, outputs);
-
         if (this.readAndSetInputs(this.inputBuffers, inputs)) {
             OLAProcessor.shiftBuffers(this.inputBuffers);
 
             if (this.processCounter === this.processOverlap || this.processCounter === 0) {
+                this.reallocateChannelsIfNeeded(inputs, outputs);
                 this.prepareInputBuffersToSend();
                 this.processOLA(this.inputBuffersToSend, this.outputBuffersToRetrieve, params);
                 this.handleOutputBuffersToRetrieve();
                 this.processCounter = 0;
+                ++this.bufferResetCounter;
+                this.bufferResetCounter &= (BUFFER_RESET_THRESHOLD - 1);
             }
 
             this.writeOutputs(outputs);
@@ -205,6 +222,9 @@ class PhaseVocoderProcessor extends OLAProcessor {
         return [{
             name: 'pitchFactor',
             defaultValue: 1.0,
+        }, {
+            name: 'gainFactor',
+            defaultValue: 1.0
         }];
     }
 
@@ -230,6 +250,8 @@ class PhaseVocoderProcessor extends OLAProcessor {
         } else if (data.hasOwnProperty('eqchange')) {
             const index = data.index;
             multiplier[index] = data.value;
+        } else if (data.hasOwnProperty('gain')) {
+            this.gainFactor = data.gain;
         }
     }
 

@@ -58,15 +58,27 @@ export class GlobalAudioService {
     });
   }
 
+  onGainFactorChanged(value: number) {
+    this.audioWorkletNode?.port.postMessage({
+      gain: value
+    });
+  }
+
   changePitchFactor(value: number) {
-    // @ts-expect-error
     const currentPitch = this.audioWorkletNode.parameters.get('pitchFactor');
+    // @ts-expect-error
     currentPitch.value = value;
   }
 
-  changeSpeedFactor(value: number) {
+  changeVolumeFactor(value: number) {
+    const currentGain = this.audioWorkletNode.parameters.get('gainFactor');
     // @ts-expect-error
+    currentGain.value = value;
+  }
+
+  changeSpeedFactor(value: number) {
     const currentRate = this.audioWorkletNode.parameters.get('playbackRate');
+    // @ts-expect-error
     currentRate.value = value;
   }
 
@@ -74,7 +86,7 @@ export class GlobalAudioService {
     if (!this.audioContext) {
       this.audioContext = new AudioContext();
       this.mainGain = this.audioContext.createGain();
-      this.mainGain.gain.value = 1.25;
+      this.mainGain.gain.value = 1.5;
       this.createWorkletNode();
     }
 

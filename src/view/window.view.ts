@@ -298,6 +298,7 @@ export class WindowView {
       this.buildEqPanel(),
       this.setSliderContainer('Pitch Factor', this.setSlider('pitch')),
       this.setSliderContainer('Speed Factor', this.setSlider('speed')),
+      this.setSliderContainer('Gain Factor', this.setSlider('gain', '0.5', '2.0')),
       this.createAudioPermissionButton(),
       this.createGithubButton(),
       this.createFileSelectionButton(),
@@ -420,24 +421,25 @@ export class WindowView {
     grandParent.children[1].innerHTML = elem.value.toString();
 
     switch (elem.getAttribute('data-change')) {
-      case 'pitch': {
+      case 'pitch':
         this.audioService.changePitchFactor(parseFloat(elem.value));
         break;
-      }
-      case 'speed': {
+      case 'speed':
         this.bufferSourceNode.mediaElement.playbackRate = parseFloat(elem.value);
         break;
-      }
+      case 'gain': 
+        this.audioService.onGainFactorChanged(parseFloat(elem.value));
+        break;
     }
   }
 
-  setSlider(change: string) {
+  setSlider(change: string, min: string = '0.5', max: string = '1.5') {
     return el('input')
       .attr('type', 'range')
       .attr('data-change', change)
-      .attr('min', '0.5')
-      .attr('max', '1.5')
-      .attr('value', '1')
+      .attr('min', min)
+      .attr('max', max)
+      .attr('value', '1.0')
       .attr('step', '0.01')
       .evt('input', this.setSliderValue.bind(this))
       .get<HTMLInputElement>();
