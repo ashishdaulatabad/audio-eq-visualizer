@@ -1,4 +1,4 @@
-import { el } from "../common/domhelper";
+import { el, txt } from "../common/domhelper";
 import { Subscriber } from "../common/subscriber";
 
 export class PanelView {
@@ -12,7 +12,19 @@ export class PanelView {
     return el('div')
       .mcls('fixed', 'bg-gray-600/30', 'backdrop-blur-[2px]', 'min-w-36', 'min-h-24', 'top-10', 'right-10', 'rounded-[1rem]', 'pr-0', 'text-center')
       .mcls('overflow-y-scroll', 'shadow-md', 'panel-height', 'scrollbar-thumb')
-      .inners(el('div').mcls('text-gray-200', 'p-2').innerHtml('Press LCtrl to hide the panel.'))
+      .inners(
+        el('div')
+          .mcls('text-gray-200', 'p-2')
+          .innerHtml('Press LCtrl to hide the panel.'),
+        el('div')
+          .mcls('text-gray-200', 'p-2')
+          .inners(
+            txt('Mail: '), 
+            el('a')
+              .attr('href', 'mailto:toastedbreadandomelette@gmail.com')
+              .innerText('toastedbreadandomelette@gmail.com')
+          )
+      )
       .get();
   }
 
