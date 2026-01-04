@@ -10,14 +10,10 @@ import { createOptionsForBar } from '../service/bar.service';
 import { createBarCircleEq } from '../service/barcircle.service';
 import { createOptionsForWaveCircle } from '../service/wavecircle.service';
 import { createOptionsForWave } from '../service/wave.service';
-import {
-  ChromeAbbr,
-  createBufferForChromaticAbberation
-} from '../service/chrome.service';
 
-export type TupleRep<T, N extends number, Acc extends T[] = []> = 
-  Acc['length'] extends N ? 
-  Acc : 
+export type TupleRep<T, N extends number, Acc extends T[] = []> =
+  Acc['length'] extends N ?
+  Acc :
   TupleRep<T, N, [...Acc, T]>;
 
 function createPanelSection(...children: HTMLElement[]) {
@@ -65,7 +61,6 @@ export class WindowView {
   height: number = document.documentElement.clientWidth;
   timer: number = 0.0;
   transformationsFns: any[] = [];
-  channelData: ChromeAbbr;
   optionsArray: any[] = [];
   currentEq: any = {};
   canvasAction: { draw: any[], effects: any[] } = {
@@ -152,10 +147,9 @@ export class WindowView {
       { drawKind: 'other', textColor: this.textColor }
     ));
 
-    this.channelData = createBufferForChromaticAbberation(this.width, this.height);
     this.offscreenCanvas = new OffscreenCanvas(this.width, this.height);
     this.offContext = this.offscreenCanvas.getContext(
-      '2d', 
+      '2d',
       {willReadFrequently: true}
     ) as OffscreenCanvasRenderingContext2D;
 
@@ -199,7 +193,7 @@ export class WindowView {
 
   static openGithub() {
     window.open(
-      'https://github.com/ashishdaulatabad/audio-eq-visualizer', 
+      'https://github.com/ashishdaulatabad/audio-eq-visualizer',
       '_blank'
     );
   }
@@ -227,7 +221,7 @@ export class WindowView {
     }
 
     [this.sourceBuffer, this.bufferSourceNode] = this.setSourceNode(
-      file, 
+      file,
       {playbackRate: 1}
     );
 
@@ -306,7 +300,7 @@ export class WindowView {
   }
 
   getFileList() {
-      
+
   }
 
   setSourceNode(
@@ -376,7 +370,7 @@ export class WindowView {
       .tcls('border-gray-100')
       .tcls('bg-gray-600/80')
       .attr('title', this.replay ? 'Loop: Active' : 'Loop: Inactive');
-  
+
     if (this.sourceBuffer) {
       if (this.replay) {
         if (this.sourceBuffer.ended) {
@@ -427,7 +421,7 @@ export class WindowView {
       case 'speed':
         this.bufferSourceNode.mediaElement.playbackRate = parseFloat(elem.value);
         break;
-      case 'gain': 
+      case 'gain':
         this.audioService.onGainFactorChanged(parseFloat(elem.value));
         break;
     }
@@ -637,7 +631,7 @@ export class WindowView {
   buildEqPanel() {
     const styleDom = constructTitle('Equalizer');
     const eqVisualizerOptions = createPanelSection(
-      styleDom, 
+      styleDom,
       this.constructEqualizer()
     );
 
@@ -799,7 +793,7 @@ export class WindowView {
   requestAnimation(): number {
     this.setFps();
     if (
-      this.canvas.width !== document.documentElement.clientWidth || 
+      this.canvas.width !== document.documentElement.clientWidth ||
       this.canvas.height !== document.documentElement.clientHeight
     ) {
       this.setResize();
@@ -834,7 +828,7 @@ export class WindowView {
       case 'Bar Mirrored': {
         this.analyser = this.initializeAnalyzerBar();
         const value = Object.assign(
-          createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'), 
+          createOptionsForBar(this.frequencyIncr, this.currentMode === 'Bar Mirrored'),
           {
             isReflective: true,
             drawKind: 'eq',

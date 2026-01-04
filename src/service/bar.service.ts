@@ -81,7 +81,7 @@ function drawLineForBar(
 export function barFormation(
   canvasContext: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
   options: BarOptions & {
-    buffer: Float32Array<ArrayBuffer>,
+    buffer: Float32Array,
     analyser: AnalyserNode,
     width: number,
     height: number,
