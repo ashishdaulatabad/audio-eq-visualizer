@@ -19,17 +19,6 @@
     }
     return cachedUint8ArrayMemory0;
   }
-  var cachedTextEncoder = new TextEncoder();
-  if (!("encodeInto" in cachedTextEncoder)) {
-    cachedTextEncoder.encodeInto = function(arg, view) {
-      const buf = cachedTextEncoder.encode(arg);
-      view.set(buf);
-      return {
-        read: arg.length,
-        written: buf.length
-      };
-    };
-  }
   function passStringToWasm0(arg, malloc, realloc) {
     if (realloc === void 0) {
       const buf = cachedTextEncoder.encode(arg);
@@ -75,8 +64,6 @@
       wasm.__wbindgen_exn_store(idx);
     }
   }
-  var cachedTextDecoder = new TextDecoder("utf-8", { ignoreBOM: true, fatal: true });
-  cachedTextDecoder.decode();
   var MAX_SAFARI_DECODE_BYTES = 2146435072;
   var numBytesDecoded = 0;
   function decodeText(ptr, len) {
