@@ -150,6 +150,8 @@ export function txt(text: string): Text {
   return document.createTextNode(text);
 }
 
+type TagName = keyof HTMLElementTagNameMap;
+
 /**
  * Element generator, and helper
  * @param tag 

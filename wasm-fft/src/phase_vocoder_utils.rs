@@ -18,7 +18,19 @@ fn generate_lookup(size: usize) -> CArray {
     lookup
 }
 
+/// Hann Window Const generators.
+fn generate_hann_window(size: usize) -> Vec<f32> {
+    let size_f32 = size as f32;
+    (0..size)
+        .map(|c| {
+            0.5 * (1.0
+                - (2.0 * core::f32::consts::PI * (c as f32) / size_f32).cos())
+        })
+        .collect()
+}
+
 static mut GLOBAL_LOOKUP: Option<CArray> = None;
+static mut GLOBAL_HANN_WINDOW: Option<Vec<f32>> = None;
 
 /// Find all the peaks performed during FFT of
 /// `complex_array`
@@ -75,7 +87,6 @@ fn apply_hann_window(audio_content: &mut [f32], hann_buffer: &[f32]) {
 #[wasm_bindgen]
 pub fn process_ola_simd(
     channel: &mut [f32],
-    hann_buffer: &[f32],
     pitch_factor: f32,
     time_cursor: f32,
     frequency_increment: f32,
@@ -88,7 +99,14 @@ pub fn process_ola_simd(
         {
             GLOBAL_LOOKUP = Some(generate_lookup(channel.len()));
         }
+        if GLOBAL_HANN_WINDOW.is_none()
+            || GLOBAL_HANN_WINDOW.as_ref().unwrap().len() != channel.len()
+        {
+            GLOBAL_HANN_WINDOW = Some(generate_hann_window(channel.len()));
+        }
+        // This is safe since it's the only place where it's being modified
         let lookup = GLOBAL_LOOKUP.as_ref().unwrap();
+        let hann_buffer = GLOBAL_HANN_WINDOW.as_ref().unwrap();
 
         apply_hann_window(channel, hann_buffer);
 

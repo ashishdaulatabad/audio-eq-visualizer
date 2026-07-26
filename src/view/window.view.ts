@@ -92,10 +92,8 @@ export class WindowView {
   /// seekbar
   seekbarAnimationFrame: number | null = 0;
   /// Canvas Bar
-  // @ts-expect-error
-  sourceBuffer: HTMLAudioElement;
-  // @ts-expect-error
-  bufferSourceNode: MediaElementAudioSourceNode;
+  sourceBuffer: HTMLAudioElement | null = null;
+  bufferSourceNode: MediaElementAudioSourceNode | null = null;
   // current mode
   currentMode: string = 'Wave';
   // frequency increment
@@ -256,7 +254,7 @@ export class WindowView {
   initializeFpsCounter() {
     return el('div')
       .mcls('absolute', 'w-content', 'p-2', 'bg-gray-700/80', 'top-0', 'text-gray-200', 'rounded-b-lg')
-      .innerHtml('0 FPS')
+      .innerText('0 FPS')
       .get();
   }
 
@@ -299,51 +297,59 @@ export class WindowView {
     ];
   }
 
-  getFileList() {
+  loadMetadata() {
+    this.totalTimer = this.sourceBuffer!.duration;
+  }
 
+  onSongEnded() {
+    console.log('here.');
+    this.audioService.setAudioFileChanged(this.sampleRate);
+    this.sourceBuffer!.currentTime = 0;
+    this.sourceBuffer!.play();
   }
 
   setSourceNode(
     file: File | HTMLAudioElement,
     options?: { playbackRate: number }
   ): [HTMLAudioElement, MediaElementAudioSourceNode] {
-    if (this.sourceBuffer) {
+    if (this.sourceBuffer && this.bufferSourceNode) {
+      this.sourceBuffer.remove();
       this.bufferSourceNode.disconnect();
-    }
-
-    let sourceBuffer: HTMLAudioElement;
-    if (file instanceof File) {
-      sourceBuffer = new Audio(URL.createObjectURL(file));
-      sourceBuffer.onloadedmetadata = () => (
-        this.totalTimer = sourceBuffer.duration
+      this.sourceBuffer.removeEventListener(
+        'loadedmetadata',
+        this.loadMetadata.bind(this)
       );
-    } else {
-      sourceBuffer = file;
+      this.bufferSourceNode.removeEventListener('ended', null);
+      this.sourceBuffer = null;
+      this.bufferSourceNode = null;
     }
 
-    const bufferSourceNode = this.audioService
+    if (file instanceof File) {
+      this.sourceBuffer = new Audio(URL.createObjectURL(file));
+      this.sourceBuffer.onloadedmetadata = this.loadMetadata.bind(this);
+    } else {
+      this.sourceBuffer = file;
+    }
+
+    this.bufferSourceNode = this.audioService
       .useAudioContext()
-      .createMediaElementSource(sourceBuffer);
-    this.audioService.makeConnection(bufferSourceNode);
+      .createMediaElementSource(this.sourceBuffer);
+    this.audioService.makeConnection(this.bufferSourceNode);
 
     this.offsetTimer = 0;
-    bufferSourceNode.mediaElement.play();
+    this.bufferSourceNode.mediaElement.play();
 
     if (options?.playbackRate) {
-      bufferSourceNode.mediaElement.playbackRate = options.playbackRate;
+      this.bufferSourceNode.mediaElement.playbackRate = options.playbackRate;
     }
 
     if (this.replay) {
-      sourceBuffer.onended = () => {
-        this.audioService.setAudioFileChanged(this.sampleRate);
-        this.sourceBuffer.currentTime = 0;
-        this.sourceBuffer.play();
-      }
+      this.sourceBuffer.onended = this.onSongEnded.bind(this);
     } else {
-      sourceBuffer.onended = null;
+      this.sourceBuffer.removeEventListener('ended', this.onSongEnded.bind(this));
     }
 
-    return [sourceBuffer, bufferSourceNode];
+    return [this.sourceBuffer, this.bufferSourceNode];
   }
 
   setButtonToPlayedOrResumed(val: boolean) {
@@ -374,15 +380,9 @@ export class WindowView {
     if (this.sourceBuffer) {
       if (this.replay) {
         if (this.sourceBuffer.ended) {
-          this.audioService.setAudioFileChanged(this.sampleRate);
-          this.sourceBuffer.currentTime = 0;
-          this.sourceBuffer.play();
+          this.onSongEnded();
         }
-        this.sourceBuffer.onended = () => {
-          this.audioService.setAudioFileChanged(this.sampleRate);
-          this.sourceBuffer.currentTime = 0;
-          this.sourceBuffer.play();
-        }
+        this.sourceBuffer.onended = this.onSongEnded.bind(this);
       } else {
         this.sourceBuffer.onended = null;
       }
@@ -419,7 +419,7 @@ export class WindowView {
         this.audioService.changePitchFactor(parseFloat(elem.value));
         break;
       case 'speed':
-        this.bufferSourceNode.mediaElement.playbackRate = parseFloat(elem.value);
+        this.bufferSourceNode!.mediaElement.playbackRate = parseFloat(elem.value);
         break;
       case 'gain':
         this.audioService.onGainFactorChanged(parseFloat(elem.value));
@@ -457,16 +457,11 @@ export class WindowView {
       canvasContext.font = '300 ' + this.fontSize + 'px ' + this.font;
       canvasContext.fillStyle = this.textColor;
 
-      const time = this.sourceBuffer.currentTime;
+      const time = this.sourceBuffer!.currentTime;
 
       canvasContext.fillText(timerSec(time), 30, timerPos + this.fontSize + 10);
       canvasContext.fillStyle = this.backColor;
     }
-
-    // canvasContext.shadowColor = this.textColor;
-    // canvasContext.shadowBlur = 5;
-    // canvasContext.shadowOffsetX = 3;
-    // canvasContext.shadowOffsetY = 3;
   }
 
   getView() {
@@ -482,9 +477,10 @@ export class WindowView {
 
   moveSeekbarClick(evt: MouseEvent) {
     const time = (evt.offsetX / this.seekbarLength) * this.totalTimer;
-    this.sourceBuffer.currentTime = time;
-    if (this.sourceBuffer.paused) {
-      this.sourceBuffer.play();
+
+    this.sourceBuffer!.currentTime = time;
+    if (this.sourceBuffer!.paused) {
+      this.sourceBuffer!.play();
     }
 
     cancelAnimationFrame(this.seekbarAnimationFrame as number);
@@ -772,7 +768,7 @@ export class WindowView {
   }
 
   moveSeekbar() {
-    const currentTime = this.sourceBuffer.currentTime;
+    const currentTime = this.sourceBuffer!.currentTime;
     const position = (currentTime / this.totalTimer) * this.seekbarLength;
 
     el(this.seekBarThumb).styleAttr({ width: position + 'px' });

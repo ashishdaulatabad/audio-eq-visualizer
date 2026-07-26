@@ -11,18 +11,6 @@ function genHannWindow(length) {
     return win;
 }
 
-function generateWLookup(length) {
-    const lookUp = new Float32Array(length << 1);
-
-    for (let index = 0; index < length; index += 2) {
-        const angle = (Math.PI * index) / length;
-        lookUp[index] = Math.cos(angle)
-        lookUp[index + 1] = Math.sin(angle);
-    }
-
-    return lookUp;
-}
-
 const BUFFERED_BLOCK_SIZE = 8192;
 const WEBAUDIO_BLOCK_SIZE = 128;
 const processSize = 2048;
@@ -269,8 +257,6 @@ class PhaseVocoderProcessor extends OLAProcessor {
         this.fftSize = this.blockSize;
         this.timeCursor = 0;
         this.freqIncr = 24000 / BUFFERED_BLOCK_SIZE;
-
-        this.lookUp = generateWLookup(this.fftSize);
         this.hannWindow = genHannWindow(this.blockSize);
     }
 
@@ -283,19 +269,8 @@ class PhaseVocoderProcessor extends OLAProcessor {
                 const output = outputs[i][j];
 
                 if (this.processed) {
-                    // const out = process_ola(
-                    //     input,
-                    //     this.hannWindow,
-                    //     this.lookUp,
-                    //     pitchFactor,
-                    //     this.timeCursor,
-                    //     this.freqIncr,
-                    //     frequency,
-                    //     multiplier
-                    // );
                     const out = process_ola_simd(
                         input,
-                        this.hannWindow,
                         pitchFactor,
                         this.timeCursor,
                         this.freqIncr,
